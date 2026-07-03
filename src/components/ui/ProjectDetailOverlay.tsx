@@ -361,7 +361,7 @@ const ProjectDetailOverlay = ({ slug, onClose, onNavigate }: ProjectDetailOverla
                     display: 'block',
                   }}
                 >
-                  KEY FEATURES
+                  WHAT OTHERS DON&apos;T HAVE
                 </span>
                 <div
                   style={{
