@@ -7,6 +7,8 @@ export interface Project {
   description: string
   longDescription: string
   screenshots: string[]
+  videos?: string[]
+  aspectRatio?: string
   stack: string[]
   features: string[]
   stats: { platforms: number; features: number; linesOfCode?: number }
@@ -28,6 +30,9 @@ export const projects: Project[] = [
     screenshots: [
       '/images/projects/botzilla/1.png',
     ],
+    videos: [
+      '/videos/botzilla.mp4',
+    ],
     stack: ['Next.js 15', 'React 18', 'Supabase', 'Clerk', 'Trigger', 'TailwindCSS'],
     features: ['Multi-Modal Search', 'Deep Research Mode', 'Automated Citations', 'Background Processing'],
     stats: { platforms: 1, features: 12, linesOfCode: 6500 },
@@ -46,6 +51,9 @@ export const projects: Project[] = [
       'Listen up, marks. When you need real-time communication, you don\'t rely on some jabroni HTTP polling architecture. Convo runs on pure WebSockets, Node.js, and Express to deliver instant messaging with the ruthless aggression of a prime Attitude Era main event.\n\nWe\'re talking group chats, live typing indicators, and a React frontend so smooth it makes a flawless moonsault look sloppy. The backend orchestration ensures low-latency message delivery, keeping the conversation flowing without a single botch. It\'s not just another chat app—it\'s a certified, undisputed paradigm shift in how we build real-time systems.',
     screenshots: [
       '/images/projects/convo/1.png',
+    ],
+    videos: [
+      '/videos/convo-blitz_2026-06-01_03-01-09.mp4',
     ],
     stack: ['React', 'Node.js', 'WebSockets', 'Express'],
     features: ['Real-time Messaging', 'Live Status', 'Group Chats', 'Zero Latency'],
@@ -68,6 +76,10 @@ export const projects: Project[] = [
       '/images/projects/smart-exhibition/2.png',
       '/images/projects/smart-exhibition/3.png',
     ],
+    videos: [
+      '/videos/smart-exhibtion-video.mp4',
+    ],
+    aspectRatio: '9 / 16',
     stack: ['React Native', 'Node.js', 'MongoDB', 'Express'],
     features: [
       'QR Check-in',

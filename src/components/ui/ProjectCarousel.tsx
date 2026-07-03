@@ -5,18 +5,38 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 interface ProjectCarouselProps {
   screenshots: string[]
+  videos?: string[]
   tierColor: string
   projectTitle: string
+  aspectRatio?: string
 }
 
-const ProjectCarousel = ({ screenshots, tierColor, projectTitle }: ProjectCarouselProps) => {
+const ProjectCarousel = ({
+  screenshots,
+  videos = [],
+  tierColor,
+  projectTitle,
+  aspectRatio,
+}: ProjectCarouselProps) => {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [direction, setDirection] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set())
 
-  const hasImages = screenshots.length > 0
-  const totalSlides = screenshots.length
+  const videoItems = videos.map((src) => ({ type: 'video' as const, src }))
+  const imageItems = screenshots.map((src) => ({ type: 'image' as const, src }))
+  const mediaItems = [...videoItems, ...imageItems]
+
+  const hasMedia = mediaItems.length > 0
+  const totalSlides = mediaItems.length
+
+  const currentMedia = mediaItems[currentIndex]
+  const isVideoActive = currentMedia?.type === 'video'
+
+  const isPortrait = aspectRatio ? (() => {
+    const parts = aspectRatio.split('/').map(p => parseFloat(p.trim()))
+    return parts.length === 2 && parts[0] < parts[1]
+  })() : false
 
   const navigate = useCallback(
     (dir: number) => {
@@ -27,12 +47,12 @@ const ProjectCarousel = ({ screenshots, tierColor, projectTitle }: ProjectCarous
     [totalSlides]
   )
 
-  // Auto-advance every 4 seconds
+  // Auto-advance every 4 seconds, unless paused or playing a video
   useEffect(() => {
-    if (isPaused || totalSlides <= 1) return
+    if (isPaused || isVideoActive || totalSlides <= 1) return
     const timer = setInterval(() => navigate(1), 4000)
     return () => clearInterval(timer)
-  }, [isPaused, navigate, totalSlides])
+  }, [isPaused, isVideoActive, navigate, totalSlides])
 
   // Keyboard navigation
   useEffect(() => {
@@ -63,12 +83,12 @@ const ProjectCarousel = ({ screenshots, tierColor, projectTitle }: ProjectCarous
   }
 
   // No footage fallback
-  if (!hasImages) {
+  if (!hasMedia) {
     return (
       <div
         style={{
           width: '100%',
-          aspectRatio: '16 / 10',
+          aspectRatio: aspectRatio || '16 / 10',
           background: 'rgba(10, 10, 15, 0.8)',
           border: `1px solid rgba(255, 255, 255, 0.06)`,
           borderRadius: '4px',
@@ -136,13 +156,18 @@ const ProjectCarousel = ({ screenshots, tierColor, projectTitle }: ProjectCarous
       style={{
         width: '100%',
         position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
       }}
     >
-      {/* Image container */}
+      {/* Media container */}
       <div
         style={{
-          width: '100%',
-          aspectRatio: '16 / 10',
+          width: isPortrait ? 'auto' : '100%',
+          height: isPortrait ? '430px' : 'auto',
+          maxWidth: '100%',
+          aspectRatio: aspectRatio || '16 / 10',
           position: 'relative',
           overflow: 'hidden',
           borderRadius: '4px',
@@ -164,6 +189,40 @@ const ProjectCarousel = ({ screenshots, tierColor, projectTitle }: ProjectCarous
           }}
         />
 
+        {/* Promo Video Badge */}
+        {currentMedia?.type === 'video' && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '12px',
+              left: '12px',
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(0, 0, 0, 0.6)',
+              backdropFilter: 'blur(8px)',
+              padding: '4px 8px',
+              borderRadius: '2px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+            }}
+          >
+            <span style={{ fontSize: '0.6rem', color: tierColor, display: 'inline-flex' }}>▶</span>
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.5rem',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+              }}
+            >
+              Promo Video
+            </span>
+          </div>
+        )}
+
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
             key={currentIndex}
@@ -184,7 +243,26 @@ const ProjectCarousel = ({ screenshots, tierColor, projectTitle }: ProjectCarous
               justifyContent: 'center',
             }}
           >
-            {imageErrors.has(currentIndex) ? (
+            {currentMedia.type === 'video' ? (
+              <video
+                src={currentMedia.src}
+                autoPlay
+                loop={totalSlides === 1}
+                muted
+                playsInline
+                controls
+                onEnded={() => {
+                  if (totalSlides > 1) {
+                    navigate(1)
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                }}
+              />
+            ) : imageErrors.has(currentIndex) ? (
               <div
                 style={{
                   display: 'flex',
@@ -208,8 +286,8 @@ const ProjectCarousel = ({ screenshots, tierColor, projectTitle }: ProjectCarous
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={screenshots[currentIndex]}
-                alt={`${projectTitle} screenshot ${currentIndex + 1} of ${totalSlides}`}
+                src={currentMedia.src}
+                alt={`${projectTitle} media ${currentIndex + 1} of ${totalSlides}`}
                 onError={() =>
                   setImageErrors((prev) => new Set(prev).add(currentIndex))
                 }
@@ -338,14 +416,14 @@ const ProjectCarousel = ({ screenshots, tierColor, projectTitle }: ProjectCarous
             marginTop: '10px',
           }}
         >
-          {screenshots.map((_, i) => (
+          {mediaItems.map((_, i) => (
             <button
               key={i}
               onClick={() => {
                 setDirection(i > currentIndex ? 1 : -1)
                 setCurrentIndex(i)
               }}
-              aria-label={`Go to screenshot ${i + 1}`}
+              aria-label={`Go to slide ${i + 1}`}
               style={{
                 width: i === currentIndex ? '18px' : '6px',
                 height: '6px',

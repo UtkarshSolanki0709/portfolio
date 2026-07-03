@@ -1,26 +1,40 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { commentaryQuips } from '@/data/commentary'
 import type { CommentaryQuip as QuipType } from '@/data/commentary'
 
 interface CommentaryQuipState {
   quip: QuipType | null
-  showQuip: () => void
+  showQuip: (customQuip?: QuipType) => void
 }
 
 export function useCommentaryQuip(): CommentaryQuipState {
   const [quip, setQuip] = useState<QuipType | null>(null)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const showQuip = useCallback(() => {
-    const randomQuip =
+  const showQuip = useCallback((customQuip?: QuipType) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+
+    const nextQuip = customQuip ||
       commentaryQuips[Math.floor(Math.random() * commentaryQuips.length)]
-    setQuip(randomQuip)
+    setQuip(nextQuip)
 
-    setTimeout(() => {
+    timeoutRef.current = setTimeout(() => {
       setQuip(null)
+      timeoutRef.current = null
     }, 3800)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
   }, [])
 
   return { quip, showQuip }

@@ -50,8 +50,10 @@ skills-lock.json
 .windsurf/
 
 # HyperFrames
-intro-promo/render/
+intro-promo/renders/
 intro-promo/meta.json
+intro-promo/capture/
+
 
 # Utility Scripts
 sync-promo.ps1

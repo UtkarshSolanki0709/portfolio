@@ -38,12 +38,17 @@ const AUDIO_CONFIGS: Record<string, AudioConfig> = {
   },
 }
 
-export function useArenaAudio() {
+export function useArenaAudio(onTrackChange?: (track: 'theme' | 'bgm1' | 'bgm2') => void) {
   const isMuted = usePortfolioStore(s => s.isMuted)
   const isLoading = usePortfolioStore(s => s.isLoading)
   const hasSeenPromo = usePortfolioStore(s => s.hasSeenPromo)
   const sounds = useRef<Record<string, Howl>>({})
   const activeTrackRef = useRef<'theme' | 'bgm1' | 'bgm2' | null>(null)
+
+  const onTrackChangeRef = useRef(onTrackChange)
+  useEffect(() => {
+    onTrackChangeRef.current = onTrackChange
+  }, [onTrackChange])
 
   // Lazily get or create a Howl instance
   const getSound = useCallback((key: string): Howl | null => {
@@ -94,12 +99,17 @@ export function useArenaAudio() {
       }
     })
 
+    const prevTrack = activeTrackRef.current
     activeTrackRef.current = key
     
     // Play the target track if it's not already playing
     const targetSound = getSound(key)
     if (targetSound && !targetSound.playing()) {
       targetSound.play()
+    }
+
+    if (prevTrack !== key && onTrackChangeRef.current) {
+      onTrackChangeRef.current(key)
     }
   }, [getSound])
 

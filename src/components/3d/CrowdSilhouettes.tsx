@@ -11,6 +11,15 @@ const TIERS = [
   { radius: 23, count: 100, yBase: 5.0, rowHeight: 3.0, color: '#5a4858' },   // Upper bowl
 ]
 
+// Two gaps: one for entrance (North), one for camera-side (South)
+const northGapStart = 1.1 * Math.PI
+const northGapEnd = 1.9 * Math.PI
+const southGapStart = 0.4 * Math.PI   // adjust to camera FOV
+const southGapEnd = 0.6 * Math.PI
+
+const arc1 = [southGapEnd, northGapStart]        // West side arc
+const arc2 = [northGapEnd, southGapStart + 2 * Math.PI] // East side arc
+
 function seededRandom(seed: number) {
   const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453
   return x - Math.floor(x)
@@ -24,24 +33,9 @@ function generateTierPositions() {
     for (let i = 0; i < tier.count; i++) {
       const seed = tierIndex * 1000 + i
       
-      // Calculate normalized angle (0 to 1)
-      const t = i / tier.count
-      
-      // We want to avoid the "North" area (Entrance/Titantron). 
-      // In Three.js, with the entrance at z = -12 and titantron at z = -30:
-      // - North is -Z (around angle -PI/2 or 3PI/2)
-      // - South is +Z (around angle PI/2)
-      // - West is -X (around angle PI)
-      // - East is +X (around angle 0)
-      
-      // Arc strategy: 
-      // Map 0-1 to a restricted arc that covers West, South, and East.
-      // PI/2 is South. Let's cover from -0.1*PI (Eastish) through PI/2 (South) to 1.1*PI (Westish).
-      // This leaves a gap from 1.1*PI to 1.9*PI (North/Entrance).
-      
-      const startAngle = -0.15 * Math.PI
-      const endAngle = 1.15 * Math.PI
-      const angle = startAngle + t * (endAngle - startAngle) + seededRandom(seed) * 0.05
+      const useArc1 = i % 2 === 0
+      const [start, end] = useArc1 ? arc1 : arc2
+      const angle = start + seededRandom(seed) * (end - start)
       
       const radiusJitter = tier.radius + (seededRandom(seed + 1) - 0.5) * 3
       const x = Math.cos(angle) * radiusJitter
@@ -67,14 +61,21 @@ export default function CrowdSilhouettes() {
 
   useEffect(() => {
     if (!meshRef.current) return
+    const color = new THREE.Color()
     POSITIONS.forEach((p, i) => {
       dummy.current.position.set(p.x, p.y, p.z)
       dummy.current.scale.set(p.scale * 0.35, p.scale, p.scale * 0.2)
       dummy.current.rotation.set(0, -Math.atan2(p.x, p.z), 0) // Face the ring
       dummy.current.updateMatrix()
       meshRef.current!.setMatrixAt(i, dummy.current.matrix)
+
+      color.set(p.color)
+      meshRef.current!.setColorAt(i, color)
     })
     meshRef.current.instanceMatrix.needsUpdate = true
+    if (meshRef.current.instanceColor) {
+      meshRef.current.instanceColor.needsUpdate = true
+    }
   }, [])
 
   // Animate crowd bobbing collectively for extreme performance (reduces CPU matrix calculations from 240/frame to 1)
@@ -97,22 +98,19 @@ export default function CrowdSilhouettes() {
         {/* Slightly stylised box shape - more visible than capsule on dark bg */}
         <boxGeometry args={[1, 1, 0.5]} />
         <meshStandardMaterial
-          color="#7a6878"
           roughness={0.9}
           metalness={0}
           emissive="#3a2a38"
           emissiveIntensity={0.4}
-          transparent
-          opacity={0.85}
         />
       </instancedMesh>
 
       {/* Crowd cheering flash lights — reduced to 4 for performance */}
       {Array.from({ length: 4 }).map((_, i) => {
-        const t = i / 3
-        const startAngle = -0.15 * Math.PI
-        const endAngle = 1.15 * Math.PI
-        const angle = startAngle + t * (endAngle - startAngle)
+        const useArc1 = i % 2 === 0
+        const [start, end] = useArc1 ? arc1 : arc2
+        const t = (i < 2 ? i : i - 2) * 0.5 + 0.25
+        const angle = start + t * (end - start)
         const r = 15 + Math.sin(i * 7.3) * 3
         return (
           <pointLight

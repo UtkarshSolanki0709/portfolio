@@ -6,23 +6,22 @@ import { motion, AnimatePresence } from 'framer-motion'
 import IntroPromo from '@/components/ui/IntroPromo'
 import { usePortfolioStore } from '@/lib/store'
 import LoadingScreen from '@/components/layout/LoadingScreen'
-import StatCard from '@/components/ui/StatCard'
 import MenuPanel from '@/components/ui/MenuPanel'
 import MatchCard from '@/components/ui/MatchCard'
 import ProjectDetailOverlay from '@/components/ui/ProjectDetailOverlay'
-import SkillBelt from '@/components/ui/SkillBelt'
+import CertificatePlaque from '@/components/ui/CertificatePlaque'
 import TimelineLocker from '@/components/ui/TimelineLocker'
 import CommentaryQuipDisplay, { useCommentaryQuip } from '@/components/ui/CommentaryQuip'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { AvatarSlamSVG, RingSVG } from '@/components/ui/WrestlingIcons'
 import PipebombOverlay from '@/components/easter-eggs/PipebombOverlay'
-import FrenzyDetector from '@/components/easter-eggs/FrenzyDetector'
 import { useArenaAudio } from '@/hooks/useArenaAudio'
 import { Howler } from 'howler'
 import { useKonamiCode } from '@/hooks/useKonamiCode'
 import { usePipebomb } from '@/hooks/usePipebomb'
 import { projects } from '@/data/projects'
 import { skills } from '@/data/skills'
+import { certificates } from '@/data/certificates'
 import { timeline } from '@/data/timeline'
 import { toasts as toastData } from '@/data/toasts'
 
@@ -73,7 +72,22 @@ function PortfolioContent() {
 
   const { quip, showQuip } = useCommentaryQuip()
   const { showToast } = useToast()
-  const { playSound, nextTrack } = useArenaAudio()
+  
+  const handleTrackChange = useCallback((track: 'theme' | 'bgm1' | 'bgm2') => {
+    if (track === 'bgm2') {
+      showQuip({
+        text: "Call it WFH the way we ain't working today",
+        commentator: 'Graves',
+      })
+    } else if (track === 'bgm1') {
+      showQuip({
+        text: "Time to push the code with no tests",
+        commentator: 'JR',
+      })
+    }
+  }, [showQuip])
+
+  const { playSound, nextTrack } = useArenaAudio(handleTrackChange)
   const [pyroActive, setPyroActive] = useState(false)
   const isNavigating = useRef(false)
 
@@ -190,7 +204,6 @@ function PortfolioContent() {
         isVisible={showPipebomb}
         onClose={() => setShowPipebomb(false)}
       />
-      <FrenzyDetector />
       <CommentaryQuipDisplay quip={quip} />
 
       {/* Intro Promo Package */}
@@ -240,17 +253,7 @@ function PortfolioContent() {
             />
           </div>
 
-          {/* Fixed Stat Card */}
-          <div
-            style={{
-              position: 'fixed',
-              top: '32px',
-              right: '32px',
-              zIndex: 100,
-            }}
-          >
-            <StatCard />
-          </div>
+
 
           {/* Hardcore Mode Badge */}
           {hardcoreMode && (
@@ -420,17 +423,18 @@ function PortfolioContent() {
                   display: 'flex',
                   alignItems: 'center',
                   paddingLeft: '120px',
+                  paddingRight: '40px',
                 }}
               >
-                <div style={{ maxWidth: '800px', width: '100%' }}>
-                  <div style={{ marginBottom: '40px' }}>
-                    <RingSVG style={{ width: '100px', height: '100px', marginBottom: '16px' }} accentColor="var(--gold)" />
+                <div style={{ maxWidth: '800px', width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ marginBottom: '20px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <RingSVG style={{ width: '50px', height: '50px' }} accentColor="var(--gold)" />
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--gold)', letterSpacing: '0.3em' }}>TONIGHT&apos;S CARD</span>
                       <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>MATCH CARD</h2>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', paddingRight: '12px', flex: 1 }}>
                     {projects.map((project, index) => (
                       <MatchCard
                         key={project.slug}
@@ -462,12 +466,12 @@ function PortfolioContent() {
               >
                 <div style={{ maxWidth: '600px', width: '100%' }}>
                   <div style={{ marginBottom: '40px' }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--cyan)', letterSpacing: '0.3em' }}>TITLE HOLDERS</span>
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>CHAMPIONSHIP BELTS</h2>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--cyan)', letterSpacing: '0.3em' }}>HALL OF FAME</span>
+                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>TITLE CONTRACTS & CREDENTIALS</h2>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {skills.map((skill, index) => (
-                      <SkillBelt key={skill.name} skill={skill} index={index} />
+                    {certificates.map((cert, index) => (
+                      <CertificatePlaque key={cert.name} certificate={cert} index={index} />
                     ))}
                   </div>
                 </div>
@@ -495,10 +499,8 @@ function PortfolioContent() {
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--red-accent)', letterSpacing: '0.3em' }}>LOCKER ROOM</span>
                     <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>BACKSTAGE</h2>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {timeline.map((milestone, index) => (
-                      <TimelineLocker key={`${milestone.year}-${milestone.title}`} milestone={milestone} index={index} />
-                    ))}
+                  <div style={{ width: '100%' }}>
+                    <TimelineLocker />
                   </div>
                 </div>
               </motion.section>

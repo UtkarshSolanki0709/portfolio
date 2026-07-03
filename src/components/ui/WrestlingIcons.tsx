@@ -184,3 +184,54 @@ export function AvatarSlamSVG({ className = '', glowColor, accentColor, ...props
     </svg>
   );
 }
+
+export function CertificatePlaqueSVG({ glowColor = 'var(--gold, #D4AF37)', className = '', ...props }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 120 60"
+      className={className}
+      {...props}
+    >
+      <defs>
+        <radialGradient id="plaque-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={glowColor} stopOpacity="0.8" />
+          <stop offset="100%" stopColor={glowColor} stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="metal-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFF7D6" />
+          <stop offset="40%" stopColor="#D4AF37" />
+          <stop offset="60%" stopColor="#AA8529" />
+          <stop offset="100%" stopColor="#D4AF37" />
+        </linearGradient>
+      </defs>
+
+      {/* Background Glow */}
+      <circle cx="60" cy="30" r="28" fill="url(#plaque-glow)" opacity="0.6" />
+
+      {/* Plaque Base Plate */}
+      <rect x="25" y="10" width="70" height="40" rx="3" fill="#1A1A1A" stroke="#000" strokeWidth="2" />
+
+      {/* Gold Inner Plaque */}
+      <rect x="29" y="14" width="62" height="32" rx="2" fill="url(#metal-gradient)" stroke="#5A4700" strokeWidth="1" />
+
+      {/* Rivets/Studs in Corners */}
+      <circle cx="32" cy="17" r="1" fill="#4A3B00" />
+      <circle cx="88" cy="17" r="1" fill="#4A3B00" />
+      <circle cx="32" cy="43" r="1" fill="#4A3B00" />
+      <circle cx="88" cy="43" r="1" fill="#4A3B00" />
+
+      {/* Stylized Star and Ribbon inside the Plaque */}
+      <polygon points="60,20 63,26 70,27 65,32 66,39 60,35 54,39 55,32 50,27 57,26" fill="#1A1A1A" stroke="#5A4700" strokeWidth="0.5" />
+      <path d="M56,36 L52,43 L56,41 L60,43 L60,36" fill="#FF1744" opacity="0.85" />
+      <path d="M64,36 L68,43 L64,41 L60,43 L60,36" fill="#FF1744" opacity="0.85" />
+
+      {/* Text lines/decorations */}
+      <line x1="38" y1="22" x2="48" y2="22" stroke="#4A3B00" strokeWidth="1" opacity="0.7" />
+      <line x1="38" y1="26" x2="48" y2="26" stroke="#4A3B00" strokeWidth="1" opacity="0.7" />
+      <line x1="72" y1="22" x2="82" y2="22" stroke="#4A3B00" strokeWidth="1" opacity="0.7" />
+      <line x1="72" y1="26" x2="82" y2="26" stroke="#4A3B00" strokeWidth="1" opacity="0.7" />
+    </svg>
+  );
+}
+

@@ -213,6 +213,8 @@ const ProjectDetailOverlay = ({ slug, onClose, onNavigate }: ProjectDetailOverla
             <div>
               <ProjectCarousel
                 screenshots={project.screenshots}
+                videos={project.videos}
+                aspectRatio={project.aspectRatio}
                 tierColor={colors.border}
                 projectTitle={project.title}
               />

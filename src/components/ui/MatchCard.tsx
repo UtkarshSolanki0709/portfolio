@@ -109,7 +109,7 @@ const MatchCard = ({ project, index, onClick }: MatchCardProps) => {
       {/* VS Card Body */}
       <div
         style={{
-          padding: '12px 12px',
+          padding: '8px 12px',
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
@@ -122,7 +122,7 @@ const MatchCard = ({ project, index, onClick }: MatchCardProps) => {
           <div
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: '0.85rem',
+              fontSize: '0.8rem',
               fontWeight: 600,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
@@ -146,8 +146,8 @@ const MatchCard = ({ project, index, onClick }: MatchCardProps) => {
         {/* VS divider */}
         <div
           style={{
-            width: '32px',
-            height: '32px',
+            width: '24px',
+            height: '24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -167,7 +167,7 @@ const MatchCard = ({ project, index, onClick }: MatchCardProps) => {
           <span
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: '0.75rem',
+              fontSize: '0.65rem',
               fontWeight: 700,
               color: colors.border,
               position: 'relative',
@@ -183,7 +183,7 @@ const MatchCard = ({ project, index, onClick }: MatchCardProps) => {
           <div
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: '0.85rem',
+              fontSize: '0.8rem',
               fontWeight: 600,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
@@ -208,7 +208,7 @@ const MatchCard = ({ project, index, onClick }: MatchCardProps) => {
       {/* Stack badges */}
       <div
         style={{
-          padding: '0 12px 8px',
+          padding: '0 12px 6px',
           display: 'flex',
           gap: '3px',
           flexWrap: 'wrap',
@@ -238,9 +238,9 @@ const MatchCard = ({ project, index, onClick }: MatchCardProps) => {
       {/* Description - subtle */}
       <div
         style={{
-          padding: '0 12px 12px',
+          padding: '0 12px 10px',
           fontFamily: 'var(--font-body)',
-          fontSize: '0.65rem',
+          fontSize: '0.6rem',
           color: 'var(--text-dim)',
           lineHeight: 1.4,
           position: 'relative',
