@@ -11,6 +11,12 @@ interface PortfolioState {
   activeScene: number
   setActiveScene: (scene: number) => void
 
+  // Entrance Portal
+  portalHovered: boolean
+  setPortalHovered: (hovered: boolean) => void
+  portalPulseAt: number
+  triggerPortalPulse: () => void
+
   // Easter Eggs
   hardcoreMode: boolean
   toggleHardcoreMode: () => void
@@ -54,6 +60,12 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
   // Scene
   activeScene: 0,
   setActiveScene: (scene) => set({ activeScene: scene }),
+
+  // Entrance Portal
+  portalHovered: false,
+  setPortalHovered: (hovered) => set({ portalHovered: hovered }),
+  portalPulseAt: 0,
+  triggerPortalPulse: () => set({ portalPulseAt: performance.now() }),
 
   // Easter Eggs
   hardcoreMode: false,

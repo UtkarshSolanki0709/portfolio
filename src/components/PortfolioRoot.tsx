@@ -47,6 +47,8 @@ function PortfolioContent() {
   const setHasSeenPromo = usePortfolioStore(s => s.setHasSeenPromo)
   const selectedProject = usePortfolioStore(s => s.selectedProject)
   const setSelectedProject = usePortfolioStore(s => s.setSelectedProject)
+  const setPortalHovered = usePortfolioStore(s => s.setPortalHovered)
+  const triggerPortalPulse = usePortfolioStore(s => s.triggerPortalPulse)
 
   const shouldShowPromo = !isLoading && !hasSeenPromo
 
@@ -90,6 +92,23 @@ function PortfolioContent() {
   const { playSound, nextTrack } = useArenaAudio(handleTrackChange)
   const [pyroActive, setPyroActive] = useState(false)
   const isNavigating = useRef(false)
+  const pyroTimer = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (pyroTimer.current) clearTimeout(pyroTimer.current)
+    }
+  }, [])
+
+  // Entrance portal CTA — cinematic walkout into the Match Card
+  const handleEnterArena = useCallback(() => {
+    triggerPortalPulse()
+    setPyroActive(true)
+    playSound('pyro')
+    setActiveScene(1)
+    if (pyroTimer.current) clearTimeout(pyroTimer.current)
+    pyroTimer.current = setTimeout(() => setPyroActive(false), 3000)
+  }, [triggerPortalPulse, playSound, setActiveScene])
 
 
   // Navigation Handler (Wheel / Touch)
@@ -391,20 +410,39 @@ function PortfolioContent() {
                 <div
                   style={{
                     position: 'absolute',
-                    bottom: '40px',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.6rem',
-                    color: 'var(--text-dim)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.2em',
+                    bottom: '48px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '8px',
+                    gap: '14px',
                   }}
                 >
-                  <span>SCROLL TO EXPLORE THE WORLD</span>
-                  <span style={{ fontSize: '1.2rem' }}>▼</span>
+                  <button
+                    type="button"
+                    className="portal-cta"
+                    aria-label="Enter the arena and view the match card"
+                    onClick={handleEnterArena}
+                    onMouseEnter={() => setPortalHovered(true)}
+                    onMouseLeave={() => setPortalHovered(false)}
+                    onFocus={() => setPortalHovered(true)}
+                    onBlur={() => setPortalHovered(false)}
+                  >
+                    ENTER THE ARENA
+                  </button>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.6rem',
+                      color: 'var(--text-dim)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.2em',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    OR SCROLL <span style={{ fontSize: '1rem' }}>▼</span>
+                  </span>
                 </div>
               </motion.section>
             )}

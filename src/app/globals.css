@@ -442,6 +442,43 @@ body {
   border-color: var(--gold);
 }
 
+/* ═══════ Entrance Portal CTA ═══════ */
+.portal-cta {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em; /* optically centers the letter-spaced label */
+  color: var(--gold);
+  background: rgba(10, 10, 15, 0.6);
+  border: 1px solid var(--border-gold);
+  padding: 14px 36px;
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.portal-cta:hover,
+.portal-cta:focus-visible {
+  color: var(--gold-light);
+  border-color: var(--gold);
+  background: rgba(212, 175, 55, 0.08);
+  box-shadow: var(--glow-gold);
+}
+
+.portal-cta:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+.portal-cta:active {
+  transform: translateY(1px);
+}
+
 /* ═══════ Reduced Motion ═══════ */
 @media (prefers-reduced-motion: reduce) {
   *,

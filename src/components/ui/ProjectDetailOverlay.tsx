@@ -390,14 +390,15 @@ const ProjectDetailOverlay = ({ slug, onClose, onNavigate }: ProjectDetailOverla
               </div>
 
               {/* CTA Buttons */}
-              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                {project.live && (
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                {project.live && project.live !== project.release && (
                   <a
                     href={project.live}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
-                      flex: 1,
+                      flex: '1 1 auto',
+                      minWidth: '130px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -428,13 +429,52 @@ const ProjectDetailOverlay = ({ slug, onClose, onNavigate }: ProjectDetailOverla
                     🔗 VIEW LIVE MATCH
                   </a>
                 )}
+                {project.release && (
+                  <a
+                    href={project.release}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      flex: '1 1 auto',
+                      minWidth: '130px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      padding: '10px 16px',
+                      background: `linear-gradient(135deg, ${colors.bg}, ${colors.glow})`,
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: '3px',
+                      color: colors.border,
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                      textDecoration: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = `0 0 20px ${colors.glow}`
+                      e.currentTarget.style.transform = 'translateY(-1px)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = 'none'
+                      e.currentTarget.style.transform = 'translateY(0)'
+                    }}
+                  >
+                    📲 DOWNLOAD APK
+                  </a>
+                )}
                 {project.github && (
                   <a
                     href={project.github}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
-                      flex: 1,
+                      flex: '1 1 auto',
+                      minWidth: '130px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -465,7 +505,7 @@ const ProjectDetailOverlay = ({ slug, onClose, onNavigate }: ProjectDetailOverla
                     📂 VIEW SOURCE
                   </a>
                 )}
-                {!project.live && !project.github && (
+                {!project.live && !project.github && !project.release && (
                   <div
                     style={{
                       flex: 1,

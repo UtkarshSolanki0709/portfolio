@@ -14,6 +14,7 @@ export interface Project {
   stats: { platforms: number; features: number; linesOfCode?: number }
   github?: string
   live?: string
+  release?: string
 }
 
 export const projects: Project[] = [
@@ -38,6 +39,34 @@ export const projects: Project[] = [
     stats: { platforms: 1, features: 12, linesOfCode: 6500 },
     github: '',
     live: '',
+  },
+  {
+    slug: 'travo-app',
+    tier: 'featured',
+    title: 'Travo',
+    matchLabel: 'FEATURED · NO HOLDS BARRED',
+    opponent: 'TRAVO APP',
+    description:
+      'Clear the runway! Travo is the cross-platform social travel companion connecting explorers worldwide with real-time location sharing, Geoapify turn-by-turn routing, interest-matched meetups, and high-def travel stories.',
+    longDescription:
+      'Travo is a full-featured, cross-platform social travel mobile application built with React Native, Expo SDK 54, Supabase, and Clerk.\n\nI built Travo to turn solo journeys into shared adventures. Traditional travel tools are static booking utilities with zero real-time discovery. Travo solves this by connecting travelers dynamically through live GPS proximity tracking, interest-matched activity groups, and instant join workflows.\n\nWhat makes Travo stand out is its integrated geospatial architecture paired with cloud media pipelines: Geoapify routing with turn-by-turn navigation & duration estimation, bi-directional Clerk-to-Supabase identity synchronization, and adaptive Cloudinary media delivery for traveler feeds and stories.',
+    screenshots: [
+      '/images/projects/travo/1.png',
+    ],
+    aspectRatio: '1 / 1',
+    stack: ['React Native', 'Expo 54', 'TypeScript', 'Supabase', 'Clerk', 'Geoapify', 'Cloudinary', 'NativeWind'],
+    features: [
+      'Live Location & Proximity Tracking',
+      'Geoapify Turn-by-Turn Routing',
+      'Interest-Matched Meetup Groups',
+      'Clerk & Supabase Auth Sync',
+      'Cloudinary Dynamic Media Feed',
+      'Real-Time Presence & Availability',
+    ],
+    stats: { platforms: 2, features: 14, linesOfCode: 7800 },
+    github: 'https://github.com/UtkarshSolanki0709/Travo',
+    release: 'https://github.com/UtkarshSolanki0709/Travo/releases/tag/v.1.0.1',
+    live: 'https://github.com/UtkarshSolanki0709/Travo/releases/tag/v.1.0.1',
   },
   {
     slug: 'convo-website',
