@@ -615,10 +615,10 @@ function PortfolioContent() {
                   altText="Triple Crown Championship Belt"
                   badgeText="TROPHY ROOM"
                   title="GOLDEN BELTS"
-                  subtitle="5X CERTIFIED CHAMP"
+                  subtitle="6X CERTIFIED CHAMP"
                   accentColor="var(--cyan)"
                   stats={[
-                    { label: 'TITLES', val: '5 Belts' },
+                    { label: 'TITLES', val: '6 Belts' },
                     { label: 'TIER', val: 'Diamond' },
                     { label: 'REIGN', val: 'Active' },
                   ]}
