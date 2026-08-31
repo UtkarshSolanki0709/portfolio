@@ -13,15 +13,18 @@ const typeStyles = {
 
 interface TimelineNodeProps {
   milestone: Milestone
-  index: number
+  index?: number
 }
 
-const TimelineNode = ({ milestone, index }: TimelineNodeProps) => {
+const TimelineNode = ({ milestone, index = 0 }: TimelineNodeProps) => {
   const [isHovered, setIsHovered] = useState(false)
   const style = typeStyles[milestone.type] || { color: 'var(--gold)', icon: '💼' }
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.08 }}
       style={{
         position: 'relative',
         display: 'flex',
@@ -151,7 +154,7 @@ const TimelineNode = ({ milestone, index }: TimelineNodeProps) => {
           </p>
         </motion.div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 

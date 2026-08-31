@@ -4,28 +4,44 @@ import { useEffect, useRef, useCallback } from 'react'
 import { Howl, Howler } from 'howler'
 import { usePortfolioStore } from '@/lib/store'
 
+export type MusicTrackKey = 'theme' | 'bgm1' | 'bgm2'
+
+export const TRACK_METADATA: Record<MusicTrackKey, { title: string; genre: string }> = {
+  theme: {
+    title: 'Entrance Theme · Main Event',
+    genre: 'Industrial Metal',
+  },
+  bgm1: {
+    title: 'Match Card · Undisputed BGM 1',
+    genre: 'Hard Rock',
+  },
+  bgm2: {
+    title: 'Championship Belt · Main Event BGM 2',
+    genre: 'Arena Anthem',
+  },
+}
+
 interface AudioConfig {
   src: string[]
   loop?: boolean
   volume?: number
 }
 
-// Audio configs — Howl instances are created lazily on first play
 const AUDIO_CONFIGS: Record<string, AudioConfig> = {
   theme: {
     src: ['/audio/entrance-theme.mp3'],
-    loop: true,
+    loop: false,
     volume: 0.5,
   },
   bgm1: {
     src: ['/audio/bgm1.mp3'],
     loop: false,
-    volume: 0.5,
+    volume: 0.45,
   },
   bgm2: {
     src: ['/audio/bgm2.mp3'],
     loop: false,
-    volume: 0.5,
+    volume: 0.45,
   },
   pyro: {
     src: ['/audio/alex_jauk-echoing-explosion-196259.mp3'],
@@ -38,12 +54,15 @@ const AUDIO_CONFIGS: Record<string, AudioConfig> = {
   },
 }
 
-export function useArenaAudio(onTrackChange?: (track: 'theme' | 'bgm1' | 'bgm2') => void) {
-  const isMuted = usePortfolioStore(s => s.isMuted)
-  const isLoading = usePortfolioStore(s => s.isLoading)
-  const hasSeenPromo = usePortfolioStore(s => s.hasSeenPromo)
+export function useArenaAudio(
+  onTrackChange?: (track: MusicTrackKey, title: string) => void
+) {
+  const isMuted = usePortfolioStore((s) => s.isMuted)
+  const isLoading = usePortfolioStore((s) => s.isLoading)
+  const hasSeenPromo = usePortfolioStore((s) => s.hasSeenPromo)
   const sounds = useRef<Record<string, Howl>>({})
-  const activeTrackRef = useRef<'theme' | 'bgm1' | 'bgm2' | null>(null)
+  const activeTrackRef = useRef<MusicTrackKey | null>(null)
+  const playTrackRef = useRef<(key: MusicTrackKey) => void>(() => {})
 
   const onTrackChangeRef = useRef(onTrackChange)
   useEffect(() => {
@@ -63,8 +82,6 @@ export function useArenaAudio(onTrackChange?: (track: 'theme' | 'bgm1' | 'bgm2')
         console.warn(`[ArenaAudio] ${key} load error:`, err),
       onplayerror: (_id: number, err: unknown) => {
         console.warn(`[ArenaAudio] ${key} play error:`, err)
-        // Attempt to recover by unlocking audio context
-        Howler.unload()
       },
     })
 
@@ -85,74 +102,74 @@ export function useArenaAudio(onTrackChange?: (track: 'theme' | 'bgm1' | 'bgm2')
     Howler.mute(isMuted)
   }, [isMuted])
 
-  // Centralized helper to play a music track and stop all others
-  const playTrack = useCallback((key: 'theme' | 'bgm1' | 'bgm2') => {
-    const musicTracks: ('theme' | 'bgm1' | 'bgm2')[] = ['theme', 'bgm1', 'bgm2']
-    
-    // Stop all other music tracks unconditionally
-    musicTracks.forEach((trackKey) => {
-      if (trackKey !== key) {
-        const sound = sounds.current[trackKey]
-        if (sound) {
-          sound.stop()
+  // Central helper to play a music track and auto-chain next track on finish
+  const playTrack = useCallback(
+    (key: MusicTrackKey) => {
+      const musicTracks: MusicTrackKey[] = ['theme', 'bgm1', 'bgm2']
+
+      // Stop all other music tracks unconditionally
+      musicTracks.forEach((trackKey) => {
+        if (trackKey !== key) {
+          const sound = sounds.current[trackKey]
+          if (sound) {
+            sound.stop()
+          }
+        }
+      })
+
+      const prevTrack = activeTrackRef.current
+      activeTrackRef.current = key
+
+      const targetSound = getSound(key)
+      if (targetSound) {
+        // Remove existing end handler to avoid duplicate callbacks
+        targetSound.off('end')
+
+        // When track finishes naturally, alternate between bgm1 and bgm2 in the background
+        targetSound.on('end', () => {
+          if (key === 'theme' || key === 'bgm2') {
+            playTrackRef.current('bgm1')
+          } else {
+            playTrackRef.current('bgm2')
+          }
+        })
+
+        if (!targetSound.playing()) {
+          targetSound.play()
         }
       }
-    })
 
-    const prevTrack = activeTrackRef.current
-    activeTrackRef.current = key
-    
-    // Play the target track if it's not already playing
-    const targetSound = getSound(key)
-    if (targetSound && !targetSound.playing()) {
-      targetSound.play()
-    }
+      if (prevTrack !== key && onTrackChangeRef.current) {
+        onTrackChangeRef.current(key, TRACK_METADATA[key]?.title || key)
+      }
+    },
+    [getSound]
+  )
 
-    if (prevTrack !== key && onTrackChangeRef.current) {
-      onTrackChangeRef.current(key)
-    }
-  }, [getSound])
-
-  // Central theme/BGM management
   useEffect(() => {
-    if (isLoading) return // Do nothing while loading screen is active
+    playTrackRef.current = playTrack
+  }, [playTrack])
+
+  // Central lifecycle:
+  // 1. Loading screen active -> no audio
+  // 2. User enters arena, promo playing (!hasSeenPromo) -> play entrance theme
+  // 3. Promo ends (hasSeenPromo) -> switch immediately to bgm1, alternating with bgm2 in background
+  useEffect(() => {
+    if (isLoading) return
 
     if (!hasSeenPromo) {
-      // Intro promo is active -> play entrance theme
-      playTrack('theme')
+      if (activeTrackRef.current !== 'theme') {
+        playTrack('theme')
+      }
     } else {
-      // Promo finished -> stop entrance theme, start alternating BGMs
-      const bgm1 = getSound('bgm1')
-      const bgm2 = getSound('bgm2')
-      if (!bgm1 || !bgm2) return
-
-      // Clear previous 'end' listeners to avoid duplicates
-      bgm1.off('end')
-      bgm2.off('end')
-
-      bgm1.on('end', () => {
-        playTrack('bgm2')
-      })
-
-      bgm2.on('end', () => {
-        playTrack('bgm1')
-      })
-
-      // Start the loop with bgm1 if we just transitioned from theme or have no active track
+      // If we just finished the promo (or have no background track yet), start bgm1
       if (activeTrackRef.current === 'theme' || !activeTrackRef.current) {
         playTrack('bgm1')
-      } else {
-        // Ensure the active BGM track is playing if it should be
-        const currentKey = activeTrackRef.current
-        const activeSound = sounds.current[currentKey]
-        if (activeSound && !activeSound.playing() && !isMuted) {
-          activeSound.play()
-        }
       }
     }
-  }, [isLoading, hasSeenPromo, playTrack, getSound, isMuted])
+  }, [isLoading, hasSeenPromo, playTrack])
 
-  // Pause / Resume tracks when muting / unmuting, just in case browser autoplay policies complain on background tabs
+  // Pause / Resume tracks when muting / unmuting
   useEffect(() => {
     if (!activeTrackRef.current) return
 
@@ -168,17 +185,20 @@ export function useArenaAudio(onTrackChange?: (track: 'theme' | 'bgm1' | 'bgm2')
     }
   }, [isMuted, isLoading])
 
-
-  const playSound = useCallback((key: string) => {
-    if (key === 'theme' || key === 'bgm1' || key === 'bgm2') {
-      playTrack(key)
-    } else {
-      const sound = getSound(key)
-      if (sound && !sound.playing()) {
-        sound.play()
+  // Play sound effect (pyro, crowd, etc.) or specific music track
+  const playSound = useCallback(
+    (key: string) => {
+      if (key === 'theme' || key === 'bgm1' || key === 'bgm2') {
+        playTrack(key as MusicTrackKey)
+      } else {
+        const sound = getSound(key)
+        if (sound && !sound.playing()) {
+          sound.play()
+        }
       }
-    }
-  }, [getSound, playTrack])
+    },
+    [getSound, playTrack]
+  )
 
   const stopSound = useCallback((key: string) => {
     const sound = sounds.current[key]
@@ -187,15 +207,13 @@ export function useArenaAudio(onTrackChange?: (track: 'theme' | 'bgm1' | 'bgm2')
     }
   }, [])
 
+  // Manual next track (switches between bgm1 <-> bgm2)
   const nextTrack = useCallback(() => {
-    if (!hasSeenPromo) return // Don't skip entrance theme
-
     const currentKey = activeTrackRef.current
-    if (currentKey === 'bgm1' || currentKey === 'bgm2') {
-      const nextKey = currentKey === 'bgm1' ? 'bgm2' : 'bgm1'
-      playTrack(nextKey)
-    }
-  }, [hasSeenPromo, playTrack])
+    const nextKey: MusicTrackKey = currentKey === 'bgm1' ? 'bgm2' : 'bgm1'
+    playTrack(nextKey)
+    return nextKey
+  }, [playTrack])
 
   return {
     playSound,
@@ -203,4 +221,3 @@ export function useArenaAudio(onTrackChange?: (track: 'theme' | 'bgm1' | 'bgm2')
     nextTrack,
   }
 }
-

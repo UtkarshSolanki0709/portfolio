@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { loadingTips } from '@/data/loadingTips'
 import { usePortfolioStore } from '@/lib/store'
 import { AvatarSlamSVG } from '@/components/ui/WrestlingIcons'
 
@@ -13,26 +12,9 @@ interface LoadingScreenProps {
 export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
   const { isLoading, setLoading, loadingProgress, setLoadingProgress } =
     usePortfolioStore()
-  const [tipIndex, setTipIndex] = useState(0)
-  const [currentTip, setCurrentTip] = useState(loadingTips[0])
   const [showLogo, setShowLogo] = useState(false)
   const [showContent, setShowContent] = useState(false)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const progressRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Cycle tips every 2.5s
-  useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setTipIndex((prev) => {
-        const next = (prev + 1) % loadingTips.length
-        setCurrentTip(loadingTips[next])
-        return next
-      })
-    }, 2500)
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [])
 
   // Animate progress bar — faster to reduce LCP delay
   useEffect(() => {
@@ -143,7 +125,7 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
             <AvatarSlamSVG style={{ width: '45px', height: '45px' }} glowColor="var(--red-accent)" />
           </motion.div>
 
-          {/* MAIN EVENT Logo */}
+          {/* Name + Title */}
           <motion.div
             initial={{ scale: 3, opacity: 0, filter: 'blur(10px)' }}
             animate={
@@ -161,13 +143,7 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
               },
             }}
             style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(2.5rem, 8vw, 5rem)',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.2em',
               textAlign: 'center',
-              lineHeight: 0.9,
               position: 'relative',
               zIndex: 5,
             }}
@@ -175,24 +151,46 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
             <span
               style={{
                 display: 'block',
+                fontFamily: 'var(--font-mono)',
                 fontSize: '0.45em',
                 fontWeight: 400,
                 letterSpacing: '0.5em',
                 color: 'var(--text-secondary)',
-                marginBottom: '4px',
-                fontFamily: 'var(--font-mono)',
+                marginBottom: '8px',
+                textTransform: 'uppercase',
               }}
             >
               WELCOME TO THE
             </span>
             <span
               style={{
+                display: 'block',
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(2.5rem, 8vw, 4.5rem)',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.15em',
+                lineHeight: 0.95,
                 background: 'linear-gradient(135deg, var(--gold-light), var(--gold), var(--gold-dim))',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
                 textShadow: 'none',
                 filter: 'drop-shadow(0 0 30px rgba(212,175,55,0.4))',
+              }}
+            >
+              UTKARSH SOLANKI
+            </span>
+            <span
+              style={{
+                display: 'block',
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(1.2rem, 3vw, 1.8rem)',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.2em',
+                marginTop: '8px',
+                color: 'var(--text-secondary)',
               }}
             >
               MAIN EVENT
@@ -213,7 +211,7 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
               letterSpacing: '0.3em',
             }}
           >
-            UTKARSH SOLANKI · FULL STACK ENGINEER
+            FULL STACK ENGINEER
           </motion.p>
 
           {/* Loading bar / Enter Button container */}
@@ -328,39 +326,7 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
             )}
           </motion.div>
 
-          {/* Tip text */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={showContent ? { opacity: 1 } : {}}
-            transition={{ duration: 0.5, delay: 0.6 }}
-            style={{
-              position: 'absolute',
-              bottom: '80px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 'min(500px, 85vw)',
-              textAlign: 'center',
-              zIndex: 5,
-            }}
-          >
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={tipIndex}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '0.8rem',
-                  color: 'var(--text-secondary)',
-                  lineHeight: 1.6,
-                }}
-              >
-                {currentTip}
-              </motion.p>
-            </AnimatePresence>
-          </motion.div>
+
 
           {/* Controller hints bar */}
           <motion.div

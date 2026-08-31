@@ -79,13 +79,18 @@ const jsonLd = {
   ]
 };
 
+import { ThemeProvider } from "@/components/theme-provider";
+import { ToastProvider } from "@/components/ui/Toast";
+import CommandMenu from "@/components/ui/CommandMenu";
+import { Toaster } from "sonner";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="dark">
       <head>
         <script
           type="application/ld+json"
@@ -93,7 +98,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${barlowCondensed.variable} ${rajdhani.variable} ${shareTechMono.variable} ${bebasNeue.variable}`}
+        className={`${barlowCondensed.variable} ${rajdhani.variable} ${shareTechMono.variable} ${bebasNeue.variable} dark`}
         style={{
           fontFamily: "var(--font-rajdhani, 'Rajdhani', sans-serif)",
         }}
@@ -102,7 +107,13 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        {children}
+        <ThemeProvider>
+          <ToastProvider>
+            {children}
+            <CommandMenu />
+            <Toaster theme="dark" position="bottom-right" richColors />
+          </ToastProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

@@ -45,14 +45,16 @@ const ProjectDetailOverlay = ({ slug, onClose, onNavigate }: ProjectDetailOverla
   const prevProject = currentIndex > 0 ? projects[currentIndex - 1] : null
   const nextProject = currentIndex < projects.length - 1 ? projects[currentIndex + 1] : null
 
-  // Close on Escape
+  // Close on Escape, Navigate projects on ArrowLeft/ArrowRight
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowLeft' && prevProject) onNavigate(prevProject.slug)
+      if (e.key === 'ArrowRight' && nextProject) onNavigate(nextProject.slug)
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [onClose])
+  }, [onClose, onNavigate, prevProject, nextProject])
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent) => {
@@ -96,6 +98,94 @@ const ProjectDetailOverlay = ({ slug, onClose, onNavigate }: ProjectDetailOverla
           zIndex: 0,
         }}
       />
+
+      {/* Outside PREV PROJECT Arrow */}
+      {prevProject && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onNavigate(prevProject.slug)
+          }}
+          aria-label={`Previous project: ${prevProject.title}`}
+          style={{
+            position: 'fixed',
+            left: 'max(14px, calc(50vw - 610px))',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 510,
+            width: '58px',
+            height: '58px',
+            borderRadius: '50%',
+            background: 'rgba(15, 15, 22, 0.92)',
+            border: `2px solid ${TIER_COLORS[prevProject.tier].border}`,
+            color: TIER_COLORS[prevProject.tier].border,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            fontSize: '1.5rem',
+            backdropFilter: 'blur(12px)',
+            boxShadow: `0 0 25px ${TIER_COLORS[prevProject.tier].glow}, 0 4px 20px rgba(0,0,0,0.6)`,
+            transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-50%) scale(1.18)'
+            e.currentTarget.style.background = 'rgba(25, 25, 38, 1)'
+            e.currentTarget.style.boxShadow = `0 0 35px ${TIER_COLORS[prevProject.tier].glow}, 0 6px 25px rgba(0,0,0,0.8)`
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(-50%) scale(1)'
+            e.currentTarget.style.background = 'rgba(15, 15, 22, 0.92)'
+            e.currentTarget.style.boxShadow = `0 0 25px ${TIER_COLORS[prevProject.tier].glow}, 0 4px 20px rgba(0,0,0,0.6)`
+          }}
+        >
+          ◀
+        </button>
+      )}
+
+      {/* Outside NEXT PROJECT Arrow */}
+      {nextProject && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onNavigate(nextProject.slug)
+          }}
+          aria-label={`Next project: ${nextProject.title}`}
+          style={{
+            position: 'fixed',
+            right: 'max(14px, calc(50vw - 610px))',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 510,
+            width: '58px',
+            height: '58px',
+            borderRadius: '50%',
+            background: 'rgba(15, 15, 22, 0.92)',
+            border: `2px solid ${TIER_COLORS[nextProject.tier].border}`,
+            color: TIER_COLORS[nextProject.tier].border,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            fontSize: '1.5rem',
+            backdropFilter: 'blur(12px)',
+            boxShadow: `0 0 25px ${TIER_COLORS[nextProject.tier].glow}, 0 4px 20px rgba(0,0,0,0.6)`,
+            transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-50%) scale(1.18)'
+            e.currentTarget.style.background = 'rgba(25, 25, 38, 1)'
+            e.currentTarget.style.boxShadow = `0 0 35px ${TIER_COLORS[nextProject.tier].glow}, 0 6px 25px rgba(0,0,0,0.8)`
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(-50%) scale(1)'
+            e.currentTarget.style.background = 'rgba(15, 15, 22, 0.92)'
+            e.currentTarget.style.boxShadow = `0 0 25px ${TIER_COLORS[nextProject.tier].glow}, 0 4px 20px rgba(0,0,0,0.6)`
+          }}
+        >
+          ▶
+        </button>
+      )}
 
       {/* Main panel */}
       <motion.div
@@ -530,168 +620,10 @@ const ProjectDetailOverlay = ({ slug, onClose, onNavigate }: ProjectDetailOverla
             </div>
           </div>
         </div>
-
-        {/* ═══ FOOTER NAV ═══ */}
-        <div
-          style={{
-            padding: '8px 16px',
-            borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-            background: 'rgba(6, 6, 10, 0.5)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexShrink: 0,
-          }}
-        >
-          {prevProject ? (
-            <button
-              onClick={() => onNavigate(prevProject.slug)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px 8px',
-                borderRadius: '2px',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'none'
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '0.75rem',
-                  color: TIER_COLORS[prevProject.tier].border,
-                }}
-              >
-                ◀
-              </span>
-              <div style={{ textAlign: 'left' }}>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.4rem',
-                    color: 'var(--text-dim)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                  }}
-                >
-                  PREV MATCH
-                </div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '0.65rem',
-                    fontWeight: 600,
-                    color: 'var(--text-secondary)',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {prevProject.opponent}
-                </div>
-              </div>
-            </button>
-          ) : (
-            <div />
-          )}
-
-          {/* Position indicator */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '4px',
-              alignItems: 'center',
-            }}
-          >
-            {projects.map((p, i) => (
-              <div
-                key={p.slug}
-                style={{
-                  width: i === currentIndex ? '14px' : '4px',
-                  height: '4px',
-                  borderRadius: '2px',
-                  background:
-                    i === currentIndex
-                      ? TIER_COLORS[p.tier].border
-                      : 'rgba(255,255,255,0.12)',
-                  transition: 'all 0.3s ease',
-                  cursor: 'pointer',
-                }}
-                onClick={() => onNavigate(p.slug)}
-              />
-            ))}
-          </div>
-
-          {nextProject ? (
-            <button
-              onClick={() => onNavigate(nextProject.slug)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px 8px',
-                borderRadius: '2px',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'none'
-              }}
-            >
-              <div style={{ textAlign: 'right' }}>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.4rem',
-                    color: 'var(--text-dim)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                  }}
-                >
-                  NEXT MATCH
-                </div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '0.65rem',
-                    fontWeight: 600,
-                    color: 'var(--text-secondary)',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {nextProject.opponent}
-                </div>
-              </div>
-              <span
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '0.75rem',
-                  color: TIER_COLORS[nextProject.tier].border,
-                }}
-              >
-                ▶
-              </span>
-            </button>
-          ) : (
-            <div />
-          )}
-        </div>
       </motion.div>
 
       {/* Responsive grid override for mobile */}
-      <style jsx global>{`
+      <style>{`
         @media (max-width: 768px) {
           .project-detail-grid {
             grid-template-columns: 1fr !important;

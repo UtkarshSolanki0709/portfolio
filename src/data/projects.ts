@@ -38,7 +38,7 @@ export const projects: Project[] = [
     features: ['Trigger.dev Async Jobs', 'Multi-Modal Synthesizer', 'Real-Time Web Indexing', 'Automatic Auto-Citations'],
     stats: { platforms: 1, features: 12, linesOfCode: 6500 },
     github: '',
-    live: '',
+    live: 'https://botzilla-eight.vercel.app/',
   },
   {
     slug: 'travo-app',
@@ -88,7 +88,7 @@ export const projects: Project[] = [
     features: ['Bare-Metal WebSockets', 'Instant Connection Recovery', 'Zero-Polling Architecture', 'Sub-millisecond Sync'],
     stats: { platforms: 1, features: 8, linesOfCode: 5100 },
     github: '',
-    live: '',
+    live: 'https://convo-d443.onrender.com/',
   },
   {
     slug: 'smart-exhibition-app',
@@ -118,7 +118,7 @@ export const projects: Project[] = [
       'Admin Panel',
     ],
     stats: { platforms: 3, features: 12, linesOfCode: 8400 },
-    github: '',
+    github: 'https://github.com/UtkarshSolanki0709/smart-exhibition',
     live: '',
   },
 ]

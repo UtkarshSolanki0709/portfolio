@@ -1,11 +1,11 @@
 import React from 'react';
 
-interface IconProps extends React.SVGProps<SVGSVGElement> {
+interface IconProps extends React.ComponentPropsWithoutRef<'svg'> {
   glowColor?: string;
   accentColor?: string;
 }
 
-export function ChampionshipBeltSVG({ glowColor = 'var(--gold, #D4AF37)', accentColor, className = '', ...props }: IconProps) {
+export function ChampionshipBeltSVG({ className = '', ...props }: IconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -15,8 +15,8 @@ export function ChampionshipBeltSVG({ glowColor = 'var(--gold, #D4AF37)', accent
     >
       <defs>
         <radialGradient id="belt-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor={glowColor} stopOpacity="0.8" />
-          <stop offset="100%" stopColor={glowColor} stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--gold, #D4AF37)" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="var(--gold, #D4AF37)" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="gold-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#FFF7D6" />
@@ -60,7 +60,7 @@ export function ChampionshipBeltSVG({ glowColor = 'var(--gold, #D4AF37)', accent
   );
 }
 
-export function RingSVG({ accentColor = 'var(--red-accent, #FF1744)', glowColor, className = '', ...props }: IconProps) {
+export function RingSVG({ accentColor = 'var(--red-accent, #FF1744)', className = '', ...props }: IconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -73,25 +73,7 @@ export function RingSVG({ accentColor = 'var(--red-accent, #FF1744)', glowColor,
           <stop offset="0%" stopColor="#EFEFEF" />
           <stop offset="100%" stopColor="#C0C0C0" />
         </linearGradient>
-        <linearGradient id="ramp-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="100%" stopColor="#DDEEFF" />
-        </linearGradient>
       </defs>
-
-      {/* Entrance Ramp (White, coming from the back) */}
-      <polygon points="40,0 60,0 68,26 32,26" fill="url(#ramp-gradient)" stroke="#888" strokeWidth="1" />
-      <line x1="42" y1="0" x2="34" y2="26" stroke={accentColor} strokeWidth="0.8" />
-      <line x1="58" y1="0" x2="66" y2="26" stroke={accentColor} strokeWidth="0.8" />
-
-      {/* Outer Dropoff/Apron */}
-      <polygon points="10,25 90,25 100,85 0,85" fill="#111" />
-      <polygon points="10,25 90,25 90,30 10,30" fill="#222" /> {/* Apron lip */}
-      
-      {/* Mat Floor (Lighter mat to contrast ropes/posts) */}
-      <polygon points="20,30 80,30 90,80 10,80" fill="url(#mat-gradient)" stroke="#555" strokeWidth="1" />
-
-      {/* Center Logo Placeholder */}
       <g transform="translate(50, 55) scale(0.8)">
         {/* Diamond logo at center of mat */}
         <polygon points="0,-15 15,0 0,15 -15,0" fill="#222" stroke={accentColor} strokeWidth="2" />
@@ -154,7 +136,7 @@ export function RingSVG({ accentColor = 'var(--red-accent, #FF1744)', glowColor,
   );
 }
 
-export function AvatarSlamSVG({ className = '', glowColor, accentColor, ...props }: IconProps) {
+export function AvatarSlamSVG({ className = '', glowColor = 'var(--red-accent, #FF1744)', accentColor = 'var(--cyan, #00E5FF)', ...props }: IconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -170,10 +152,10 @@ export function AvatarSlamSVG({ className = '', glowColor, accentColor, ...props
       </defs>
       
       {/* Base Diamond Shield */}
-      <polygon points="50,5 95,50 50,95 5,50" fill="url(#avatar-bg)" stroke="var(--cyan, #00E5FF)" strokeWidth="3" />
+      <polygon points="50,5 95,50 50,95 5,50" fill="url(#avatar-bg)" stroke={accentColor} strokeWidth="3" />
       
       {/* Inner Accent */}
-      <polygon points="50,15 85,50 50,85 15,50" fill="none" stroke="var(--cyan, #00E5FF)" strokeWidth="1" opacity="0.4" strokeDasharray="4 4" />
+      <polygon points="50,15 85,50 50,85 15,50" fill="none" stroke={glowColor} strokeWidth="1" opacity="0.6" strokeDasharray="4 4" />
 
       {/* Code Brackets Stylized like Wrestling Lightning/Claws */}
       <path d="M35,35 L20,50 L35,65" fill="none" stroke="var(--gold, #D4AF37)" strokeWidth="4" strokeLinecap="square" />

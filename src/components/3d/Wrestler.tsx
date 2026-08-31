@@ -1,250 +1,150 @@
 'use client'
 
-import { useRef, useMemo, useEffect } from 'react'
+import { useRef, useMemo, useEffect, Suspense } from 'react'
 import { useFrame } from '@react-three/fiber'
+import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 import gsap from 'gsap'
 
 interface WrestlerProps {
-    /** Scale of the wrestler model */
-    scale?: number
-    /** Rotation offset (y-axis in radians) */
-    rotation?: [number, number, number]
-    /** Position offset */
-    position?: [number, number, number]
-    activeSection?: number
+  scale?: number
+  rotation?: [number, number, number]
+  position?: [number, number, number]
+  activeSection?: number
 }
 
-export default function Wrestler({
-    scale = 1,
-    rotation = [0, 0, 0],
-    position = [0, 0, 0],
-    activeSection = 0
-}: WrestlerProps) {
-    const meshRef = useRef<THREE.Group>(null)
-    const chestRef = useRef<THREE.Object3D | null>(null)
-    const leftArmRef = useRef<THREE.Object3D | null>(null)
-    const rightArmRef = useRef<THREE.Object3D | null>(null)
-    const headRef = useRef<THREE.Object3D | null>(null)
+function DevilJinModel({
+  scale = 1.18,
+  activeSection = 0,
+}: {
+  scale?: number
+  activeSection?: number
+}) {
+  const meshRef = useRef<THREE.Group>(null)
+  const { scene } = useGLTF('/models/devil_jin.glb')
 
-    // GSAP Animation for Section Transitions
-    useEffect(() => {
-        if (!meshRef.current) return
+  // Clone scene with SkeletonUtils for proper SkinnedMesh bone binding
+  const clonedScene = useMemo(() => {
+    const clone = SkeletonUtils.clone(scene) as THREE.Group
 
-        // Section 0: Entrance (Center of ramp)
-        // Section 1: Match Card (At the ring edge)
-        // Section 2: Championships (Inside the ring)
-        
-        const timeline = gsap.timeline({ defaults: { duration: 1.5, ease: "power2.inOut" } })
-
-        if (activeSection === 0) {
-            timeline.to(meshRef.current.position, { x: 0, y: 0, z: -6 })
-            timeline.to(meshRef.current.rotation, { y: Math.PI }, 0)
-        } else if (activeSection === 1) {
-            timeline.to(meshRef.current.position, { x: 0, y: 0, z: -3 })
-            timeline.to(meshRef.current.rotation, { y: Math.PI }, 0)
-        } else if (activeSection >= 2) {
-            timeline.to(meshRef.current.position, { x: 0, y: 0.5, z: 0 })
-            timeline.to(meshRef.current.rotation, { y: 0 }, 0)
+    clone.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = true
+        child.receiveShadow = true
+        const mesh = child as THREE.Mesh
+        if (mesh.material) {
+          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+          materials.forEach((mat) => {
+            if (mat instanceof THREE.MeshStandardMaterial) {
+              mat.roughness = Math.min(Math.max(mat.roughness, 0.25), 0.85)
+              mat.metalness = Math.min(Math.max(mat.metalness, 0.1), 0.7)
+              mat.envMapIntensity = 1.5
+            }
+          })
         }
-    }, [activeSection])
-
-    useFrame((state) => {
-        const elapsed = state.clock.getElapsedTime()
-
-        if (!meshRef.current) return
-
-        // Initialize refs if needed
-        if (!chestRef.current) chestRef.current = meshRef.current.getObjectByName('chest') || null
-        if (!leftArmRef.current) leftArmRef.current = meshRef.current.getObjectByName('leftUpperArm') || null
-        if (!rightArmRef.current) rightArmRef.current = meshRef.current.getObjectByName('rightUpperArm') || null
-        if (!headRef.current) headRef.current = meshRef.current.getObjectByName('head') || null
-
-        // Calculate idle animations
-        const breathing = Math.sin(elapsed * 0.8) * 0.02
-        const sway = Math.sin(elapsed * 0.3) * 0.5 * (Math.PI / 180)
-        const armRotation = Math.sin(elapsed * 0.6) * 0.15
-
-        // Apply transformations
-        if (chestRef.current) {
-            chestRef.current.scale.set(1 + breathing, 1 + breathing * 0.5, 1 + breathing)
-        }
-
-        // Only apply sway if not being animated by GSAP or as an additive
-        meshRef.current.rotation.y += Math.sin(elapsed * 0.5) * 0.001
-
-        if (leftArmRef.current) {
-            leftArmRef.current.rotation.z = -0.2 + armRotation
-        }
-        if (rightArmRef.current) {
-            rightArmRef.current.rotation.z = 0.2 - armRotation
-        }
-        
-        if (headRef.current) {
-            headRef.current.rotation.y = Math.sin(elapsed * 0.4) * 0.1
-        }
+      }
     })
 
-    // Use useMemo to create the wrestler group once
-    const wrestlerGroup = useMemo(() => {
-        const createWrestler = () => {
-            const group = new THREE.Group()
-            group.name = 'wrestler'
+    return clone
+  }, [scene])
 
-            // Colors
-            const skinColor = 0xffdbac
-            const hairColor = 0x1a1a1a
-            const attireColor = 0xcc0000 // Red
-            const gloveColor = 0x000000 // Black
+  // GSAP Choreography: Dynamic Poses & Ring Positions per Scene
+  useEffect(() => {
+    if (!meshRef.current) return
 
-            // Body parts
-            // Head
-            const headGeometry = new THREE.SphereGeometry(0.4, 16, 16)
-            const headMaterial = new THREE.MeshStandardMaterial({ color: skinColor })
-            const head = new THREE.Mesh(headGeometry, headMaterial)
-            head.position.y = 1.8
-            head.name = 'head'
-            group.add(head)
+    // Query 3D bone nodes directly from scene graph in effect
+    const lShoulder = meshRef.current.getObjectByName('Arm left shoulder 2_069')
+    const rShoulder = meshRef.current.getObjectByName('Arm right shoulder 2_0105')
+    const lElbow = meshRef.current.getObjectByName('Arm left elbow_070')
+    const rElbow = meshRef.current.getObjectByName('Arm right elbow_0106')
+    const lWingBase = meshRef.current.getObjectByName('Wing left base_0178')
+    const rWingBase = meshRef.current.getObjectByName('Wing right base_0185')
+    const lThigh = meshRef.current.getObjectByName('Leg left thigh_0195')
+    const rThigh = meshRef.current.getObjectByName('Leg right thigh_0212')
+    const spine = meshRef.current.getObjectByName('Spine lower_07')
+    const head = meshRef.current.getObjectByName('Head neck lower_09')
 
-            // Hair (simple blob on top)
-            const hairGeometry = new THREE.SphereGeometry(0.42, 16, 16)
-            const hairMaterial = new THREE.MeshStandardMaterial({ color: hairColor })
-            const hair = new THREE.Mesh(hairGeometry, hairMaterial)
-            hair.position.y = 0.1
-            head.add(hair)
+    const tl = gsap.timeline({ defaults: { duration: 0.8, ease: 'power2.inOut' } })
 
-            // Body
-            const bodyGeometry = new THREE.BoxGeometry(0.6, 0.8, 0.3)
-            const bodyMaterial = new THREE.MeshStandardMaterial({ color: attireColor })
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial)
-            body.position.y = 1.0
-            body.name = 'chest'
-            group.add(body)
+    if (activeSection === 0) {
+      // ════════ BASE PAGE: POWERHOUSE ENTRANCE WARRIOR STANCE ════════
+      tl.to(meshRef.current.scale, { x: 1, y: 1, z: 1, duration: 0.6, ease: 'power2.out' }, 0)
+      tl.to(meshRef.current.position, { x: 0, y: 0.35, z: 0 }, 0)
+      tl.to(meshRef.current.rotation, { y: 0 }, 0)
 
-            // Arms
-            const armGeometry = new THREE.BoxGeometry(0.08, 0.6, 0.08)
-            const gloveGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1)
+      if (lShoulder) tl.to(lShoulder.rotation, { x: 0.2, y: 0.1, z: -1.05 }, 0)
+      if (rShoulder) tl.to(rShoulder.rotation, { x: 0.2, y: -0.1, z: 1.05 }, 0)
+      if (lElbow) tl.to(lElbow.rotation, { x: -0.25, y: 0.55, z: 0 }, 0)
+      if (rElbow) tl.to(rElbow.rotation, { x: -0.25, y: -0.55, z: 0 }, 0)
+      if (lWingBase) tl.to(lWingBase.rotation, { x: 0.1, y: 0.45, z: 0.2 }, 0)
+      if (rWingBase) tl.to(rWingBase.rotation, { x: 0.1, y: -0.45, z: -0.2 }, 0)
+      if (lThigh) tl.to(lThigh.rotation, { x: 0, y: 0, z: -0.1 }, 0)
+      if (rThigh) tl.to(rThigh.rotation, { x: 0, y: 0, z: 0.1 }, 0)
+      if (spine) tl.to(spine.rotation, { x: -0.05, y: 0, z: 0 }, 0)
+      if (head) tl.to(head.rotation, { x: 0.05, y: 0, z: 0 }, 0)
+    } else {
+      // Smoothly hide 3D model when navigating away to other sections
+      tl.to(meshRef.current.scale, { x: 0, y: 0, z: 0, duration: 0.4, ease: 'power2.in' }, 0)
+    }
+  }, [activeSection])
 
-            // Left arm
-            const leftUpperArm = new THREE.Mesh(
-                armGeometry,
-                new THREE.MeshStandardMaterial({ color: attireColor })
-            )
-            leftUpperArm.position.set(-0.35, 1.4, 0)
-            leftUpperArm.name = 'leftUpperArm'
-            group.add(leftUpperArm)
+  // Continuous subtle idle breathing & wing dynamics (only when activeSection === 0)
+  useFrame(({ clock }) => {
+    if (!meshRef.current || activeSection !== 0) return
+    const elapsed = clock.getElapsedTime()
 
-            const leftGlove = new THREE.Mesh(
-                gloveGeometry,
-                new THREE.MeshStandardMaterial({ color: gloveColor })
-            )
-            leftGlove.position.set(0, -0.35, 0)
-            leftUpperArm.add(leftGlove)
+    const lWing = meshRef.current.getObjectByName('Wing left 1_0179')
+    const rWing = meshRef.current.getObjectByName('Wing right 1_0186')
 
-            // Right arm
-            const rightUpperArm = new THREE.Mesh(
-                armGeometry,
-                new THREE.MeshStandardMaterial({ color: attireColor })
-            )
-            rightUpperArm.position.set(0.35, 1.4, 0)
-            rightUpperArm.name = 'rightUpperArm'
-            group.add(rightUpperArm)
+    const breath = Math.sin(elapsed * 1.6) * 0.001
+    if (lWing) lWing.rotation.y += breath
+    if (rWing) rWing.rotation.y -= breath
 
-            const rightGlove = new THREE.Mesh(
-                gloveGeometry,
-                new THREE.MeshStandardMaterial({ color: gloveColor })
-            )
-            rightGlove.position.set(0, -0.35, 0)
-            rightUpperArm.add(rightGlove)
+    // Subtle floating presence
+    meshRef.current.position.y += Math.sin(elapsed * 2.0) * 0.0012
+  })
 
-            // Legs
-            const legGeometry = new THREE.BoxGeometry(0.09, 0.7, 0.09)
-            const bootGeometry = new THREE.BoxGeometry(0.11, 0.12, 0.11)
+  return (
+    <group ref={meshRef} position={[0, 0.35, 0]}>
+      {/* Key spotlight on Devil Jin */}
+      <spotLight
+        position={[0, 9, 5]}
+        intensity={95}
+        color="#fff8f0"
+        distance={30}
+        angle={Math.PI / 4}
+        penumbra={0.7}
+      />
+      {/* Rim light (crimson demonic back aura) */}
+      <pointLight position={[0, 3.5, -3.5]} intensity={55} color="#ff1744" distance={18} />
+      {/* Front warm fill */}
+      <pointLight position={[0, 2.5, 3.5]} intensity={45} color="#ffd700" distance={15} />
 
-            // Left leg
-            const leftLeg = new THREE.Mesh(
-                legGeometry,
-                new THREE.MeshStandardMaterial({ color: 0x0000ff }) // Blue pants
-            )
-            leftLeg.position.set(-0.15, 0.3, 0)
-            leftLeg.name = 'leftLeg'
-            group.add(leftLeg)
-
-            const leftBoot = new THREE.Mesh(
-                bootGeometry,
-                new THREE.MeshStandardMaterial({ color: gloveColor })
-            )
-            leftBoot.position.set(0, -0.41, 0)
-            leftLeg.add(leftBoot)
-
-            // Right leg
-            const rightLeg = new THREE.Mesh(
-                legGeometry,
-                new THREE.MeshStandardMaterial({ color: 0x0000ff })
-            )
-            rightLeg.position.set(0.15, 0.3, 0)
-            rightLeg.name = 'rightLeg'
-            group.add(rightLeg)
-
-            const rightBoot = new THREE.Mesh(
-                bootGeometry,
-                new THREE.MeshStandardMaterial({ color: gloveColor })
-            )
-            rightBoot.position.set(0, -0.41, 0)
-            rightLeg.add(rightBoot)
-
-            // Feet
-            const footGeometry = new THREE.BoxGeometry(0.12, 0.04, 0.18)
-            const leftFoot = new THREE.Mesh(
-                footGeometry,
-                new THREE.MeshStandardMaterial({ color: gloveColor })
-            )
-            leftFoot.position.set(-0.15, -0.45, 0)
-            leftLeg.add(leftFoot)
-
-            const rightFoot = new THREE.Mesh(
-                footGeometry,
-                new THREE.MeshStandardMaterial({ color: gloveColor })
-            )
-            rightFoot.position.set(0.15, -0.45, 0)
-            rightLeg.add(rightFoot)
-
-            // Simple facial features (optional)
-            // Eyes
-            const eyeGeometry = new THREE.SphereGeometry(0.03, 8, 8)
-            const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 })
-
-            const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial)
-            leftEye.position.set(-0.12, 1.9, 0.35)
-            head.add(leftEye)
-
-            const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial)
-            rightEye.position.set(0.12, 1.9, 0.35)
-            head.add(rightEye)
-
-            // Mouth (simple line)
-            const mouthGeometry = new THREE.BoxGeometry(0.08, 0.01, 0.01)
-            const mouthMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 })
-            const mouth = new THREE.Mesh(mouthGeometry, mouthMaterial)
-            mouth.position.set(0, 1.75, 0.38)
-            head.add(mouth)
-
-            group.scale.set(scale, scale, scale)
-            group.rotation.set(...rotation)
-            group.position.set(...position)
-
-            group.traverse((child) => {
-                if (child instanceof THREE.Mesh) {
-                    child.castShadow = true
-                    child.receiveShadow = true
-                }
-            })
-
-            return group
-        }
-
-        return createWrestler()
-    }, [scale, rotation, position])
-
-    return <primitive object={wrestlerGroup} ref={meshRef} />
+      {/* Model offset so feet rest cleanly on the canvas floor */}
+      <primitive object={clonedScene} position={[0, 1.0, 0]} scale={[scale, scale, scale]} />
+    </group>
+  )
 }
+
+function WrestlerFallback() {
+  return (
+    <group position={[0, 0.35, 0]}>
+      <mesh position={[0, 1, 0]}>
+        <cylinderGeometry args={[0.3, 0.4, 2, 8]} />
+        <meshStandardMaterial color="#111118" roughness={0.8} transparent opacity={0.3} />
+      </mesh>
+    </group>
+  )
+}
+
+export default function Wrestler({ scale = 1.18, activeSection = 0 }: WrestlerProps) {
+  return (
+    <Suspense fallback={<WrestlerFallback />}>
+      <DevilJinModel scale={scale} activeSection={activeSection} />
+    </Suspense>
+  )
+}
+
+// Preload the GLB model in background
+useGLTF.preload('/models/devil_jin.glb')

@@ -364,7 +364,14 @@ export default function EntrancePortal() {
       )}
 
       {/* ── Floor branding on the runway, matched to the ramp tilt ── */}
-      <Suspense fallback={null}>
+      <Suspense
+        fallback={
+          <mesh position={[0, RAMP_SURFACE_Y(-12.5) + 0.015, -12.5]} rotation={RAMP_TILT_ROT}>
+            <planeGeometry args={[3.2, 0.7]} />
+            <meshBasicMaterial color="#d4af37" transparent opacity={0.05} depthWrite={false} />
+          </mesh>
+        }
+      >
         <Text
           position={[0, RAMP_SURFACE_Y(-12.5) + 0.015, -12.5]}
           rotation={RAMP_TILT_ROT}

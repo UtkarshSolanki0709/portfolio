@@ -8,6 +8,15 @@ interface SceneWrapperProps {
   children: React.ReactNode
 }
 
+function SceneLoaderFallback() {
+  return (
+    <mesh position={[0, 2, 0]}>
+      <octahedronGeometry args={[0.5, 0]} />
+      <meshStandardMaterial color="#d4af37" wireframe />
+    </mesh>
+  )
+}
+
 export default function SceneWrapper({ children }: SceneWrapperProps) {
   // Start with on-demand rendering, switch to continuous after first paint
   const [frameloop, setFrameloop] = useState<'demand' | 'always'>('demand')
@@ -48,7 +57,7 @@ export default function SceneWrapper({ children }: SceneWrapperProps) {
         }}
         style={{ pointerEvents: 'auto', background: '#0a0a0f' }}
       >
-        <Suspense fallback={null}>
+        <Suspense fallback={<SceneLoaderFallback />}>
           {children}
         </Suspense>
       </Canvas>

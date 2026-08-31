@@ -139,7 +139,7 @@ export default function Arena({ pyroActive = false, activeSection = 0 }: ArenaPr
 
        {/* Wrestler on the ramp */}
        <Wrestler 
-         scale={0.8} 
+         scale={1.18} 
          activeSection={activeSection}
        />
 

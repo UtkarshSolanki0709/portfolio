@@ -8,44 +8,52 @@ interface MenuItem {
   label: string
   icon: string
   id: string
+  sceneIndex: number
+  projectSlug?: string
 }
 
 const menuItems: MenuItem[] = [
-  { label: 'ENTRANCE', icon: '🎭', id: 'entrance' },
-  { label: 'MATCH CARD', icon: '⚔️', id: 'matchcard' },
-  { label: 'CHAMPIONSHIPS', icon: '🏆', id: 'championships' },
-  { label: 'BACKSTAGE', icon: '🚪', id: 'backstage' },
-  { label: 'MAIN EVENT', icon: '⭐', id: 'mainevent' },
-  { label: 'CONTACT', icon: '📞', id: 'contact' },
+  { label: 'ENTRANCE', icon: '🎭', id: 'entrance', sceneIndex: 0 },
+  { label: 'MAIN EVENT', icon: '⭐', id: 'mainevent', sceneIndex: 1, projectSlug: 'botzilla-website' },
+  { label: 'MATCH CARD', icon: '⚔️', id: 'matchcard', sceneIndex: 1 },
+  { label: 'CHAMPIONSHIPS', icon: '🏆', id: 'championships', sceneIndex: 2 },
+  { label: 'BACKSTAGE', icon: '🚪', id: 'backstage', sceneIndex: 3 },
+  { label: 'CONTACT', icon: '📞', id: 'contact', sceneIndex: 4 },
 ]
 
-interface MenuPanelProps {
-  onHoverItem?: (index: number) => void
-  onSelectItem?: (id: string) => void
-}
-
-export default function MenuPanel({ onHoverItem, onSelectItem }: MenuPanelProps) {
-  const { activeMenuItem, setActiveMenuItem } = usePortfolioStore()
+export default function MenuPanel() {
+  const { activeMenuItem, setActiveMenuItem, setActiveScene, setSelectedProject } = usePortfolioStore()
   const [isExpanded, setIsExpanded] = useState(false)
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        setActiveMenuItem(
-          Math.min(activeMenuItem + 1, menuItems.length - 1)
-        )
+        const next = Math.min(activeMenuItem + 1, menuItems.length - 1)
+        setActiveMenuItem(next)
+        const target = menuItems[next]
+        setActiveScene(target.sceneIndex)
+        if (target.projectSlug) {
+          setSelectedProject(target.projectSlug)
+        } else {
+          setSelectedProject(null)
+        }
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
-        setActiveMenuItem(Math.max(activeMenuItem - 1, 0))
-      } else if (e.key === 'Enter') {
-        e.preventDefault()
-        onSelectItem?.(menuItems[activeMenuItem].id)
+        const prev = Math.max(activeMenuItem - 1, 0)
+        setActiveMenuItem(prev)
+        const target = menuItems[prev]
+        setActiveScene(target.sceneIndex)
+        if (target.projectSlug) {
+          setSelectedProject(target.projectSlug)
+        } else {
+          setSelectedProject(null)
+        }
       } else if (e.key === 'Escape') {
         setIsExpanded(false)
       }
     },
-    [activeMenuItem, setActiveMenuItem, onSelectItem]
+    [activeMenuItem, setActiveMenuItem, setActiveScene, setSelectedProject]
   )
 
   useEffect(() => {
@@ -102,11 +110,15 @@ export default function MenuPanel({ onHoverItem, onSelectItem }: MenuPanelProps)
             aria-current={isActive ? 'page' : undefined}
             onClick={() => {
               setActiveMenuItem(index)
-              onSelectItem?.(item.id)
+              setActiveScene(item.sceneIndex)
+              if (item.projectSlug) {
+                setSelectedProject(item.projectSlug)
+              } else {
+                setSelectedProject(null)
+              }
             }}
             onMouseEnter={() => {
               setActiveMenuItem(index)
-              onHoverItem?.(index)
             }}
             whileHover={{ x: 4 }}
             whileTap={{ scale: 0.97 }}

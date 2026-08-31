@@ -11,18 +11,14 @@ import MatchCard from '@/components/ui/MatchCard'
 import ProjectDetailOverlay from '@/components/ui/ProjectDetailOverlay'
 import CertificatePlaque from '@/components/ui/CertificatePlaque'
 import TimelineLocker from '@/components/ui/TimelineLocker'
-import CommentaryQuipDisplay, { useCommentaryQuip } from '@/components/ui/CommentaryQuip'
+import SectionFighterPoster from '@/components/ui/SectionFighterPoster'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { AvatarSlamSVG, RingSVG } from '@/components/ui/WrestlingIcons'
-import PipebombOverlay from '@/components/easter-eggs/PipebombOverlay'
-import { useArenaAudio } from '@/hooks/useArenaAudio'
+import { useArenaAudio, TRACK_METADATA } from '@/hooks/useArenaAudio'
 import { Howler } from 'howler'
 import { useKonamiCode } from '@/hooks/useKonamiCode'
-import { usePipebomb } from '@/hooks/usePipebomb'
 import { projects } from '@/data/projects'
-import { skills } from '@/data/skills'
 import { certificates } from '@/data/certificates'
-import { timeline } from '@/data/timeline'
 import { toasts as toastData } from '@/data/toasts'
 
 // Dynamic imports for 3D components (avoids SSR issues with Three.js)
@@ -34,8 +30,6 @@ const SECTIONS = ['entrance', 'matchcard', 'championships', 'backstage', 'contac
 function PortfolioContent() {
   // Granular Zustand selectors — only re-render when the specific slice changes
   const isLoading = usePortfolioStore(s => s.isLoading)
-  const showPipebomb = usePortfolioStore(s => s.showPipebomb)
-  const setShowPipebomb = usePortfolioStore(s => s.setShowPipebomb)
   const hardcoreMode = usePortfolioStore(s => s.hardcoreMode)
   const toggleHardcoreMode = usePortfolioStore(s => s.toggleHardcoreMode)
   const incrementAttitude = usePortfolioStore(s => s.incrementAttitude)
@@ -72,24 +66,9 @@ function PortfolioContent() {
     }
   }, [isLoading])
 
-  const { quip, showQuip } = useCommentaryQuip()
   const { showToast } = useToast()
-  
-  const handleTrackChange = useCallback((track: 'theme' | 'bgm1' | 'bgm2') => {
-    if (track === 'bgm2') {
-      showQuip({
-        text: "Call it WFH the way we ain't working today",
-        commentator: 'Graves',
-      })
-    } else if (track === 'bgm1') {
-      showQuip({
-        text: "Time to push the code with no tests",
-        commentator: 'JR',
-      })
-    }
-  }, [showQuip])
 
-  const { playSound, nextTrack } = useArenaAudio(handleTrackChange)
+  const { playSound, nextTrack } = useArenaAudio()
   const [pyroActive, setPyroActive] = useState(false)
   const isNavigating = useRef(false)
   const pyroTimer = useRef<NodeJS.Timeout | null>(null)
@@ -113,7 +92,7 @@ function PortfolioContent() {
 
   // Navigation Handler (Wheel / Touch)
   useEffect(() => {
-    if (isLoading || showPipebomb || selectedProject) return
+    if (isLoading || selectedProject) return
 
     const handleWheel = (e: WheelEvent) => {
       if (isNavigating.current) return
@@ -130,27 +109,33 @@ function PortfolioContent() {
 
     window.addEventListener('wheel', handleWheel, { passive: true })
     return () => window.removeEventListener('wheel', handleWheel)
-  }, [isLoading, showPipebomb, selectedProject, activeScene, setActiveScene])
+  }, [isLoading, selectedProject, activeScene, setActiveScene])
 
   // Konami Code Easter Egg
   useKonamiCode(useCallback(() => {
     toggleHardcoreMode()
     showToast({
-      headline: '💀 HARDCORE MODE',
-      body: 'You unlocked Hardcore Mode! The arena just got dangerous.',
+      headline: '💀 HARDCORE MODE UNLOCKED',
+      body: 'You entered the cheat code! Maximum distortion enabled.',
       variant: 'red',
     })
   }, [toggleHardcoreMode, showToast]))
 
-  // Pipebomb Easter Egg
-  usePipebomb(useCallback(() => {
-    setShowPipebomb(true)
-  }, [setShowPipebomb]))
 
-  // Random Toast on E key, Pyro on P key
+
+  // Random Toast on E key, Pyro on P key, Mute on M, Next Track on N
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return
+      }
       
       if (e.key === 'e' || e.key === 'E') {
         const randomToast = toastData[Math.floor(Math.random() * toastData.length)]
@@ -180,11 +165,12 @@ function PortfolioContent() {
       }
 
       if (e.key === 'n' || e.key === 'N') {
-        nextTrack()
+        const nextKey = nextTrack()
+        const meta = TRACK_METADATA[nextKey]
         showToast({
-          headline: '⏭️ NEXT TRACK',
-          body: 'Skipping to the next theme...',
-          variant: 'cyan',
+          headline: '🎵 SOUNDTRACK CHANGED',
+          body: `Now Playing: ${meta?.title || nextKey} (${meta?.genre || 'BGM'})`,
+          variant: 'gold',
         })
       }
     }
@@ -219,11 +205,6 @@ function PortfolioContent() {
         }
         playSound('theme')
       }} />
-      <PipebombOverlay
-        isVisible={showPipebomb}
-        onClose={() => setShowPipebomb(false)}
-      />
-      <CommentaryQuipDisplay quip={quip} />
 
       {/* Intro Promo Package */}
       {shouldShowPromo && (
@@ -267,9 +248,7 @@ function PortfolioContent() {
               padding: '0 4px',
             }}
           >
-            <MenuPanel
-              onHoverItem={() => showQuip()}
-            />
+            <MenuPanel />
           </div>
 
 
@@ -306,26 +285,49 @@ function PortfolioContent() {
             {activeScene === 0 && (
               <motion.section
                 key="entrance"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 1.1 }}
-                transition={{ duration: 1, ease: 'easeInOut' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.8, ease: 'easeInOut' }}
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 'clamp(1rem, 5vh, 2rem) 1rem',
+                  pointerEvents: 'none',
                 }}
               >
-                <div
-                  style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}
+                {/* Upper Floating Name (Hovering Above/Over the Ring) */}
+                <motion.div
+                  initial={{ opacity: 0, y: -25, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{
+                    opacity: 0,
+                    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
+                  }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                  style={{
+                    position: 'absolute',
+                    top: 'clamp(20%, 25vh, 28%)',
+                    left: 0,
+                    right: 0,
+                    textAlign: 'center',
+                    zIndex: 10,
+                    pointerEvents: 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '10px',
+                    width: '100%',
+                  }}
                 >
-                  <div
+                  <motion.div
+                    exit={{
+                      opacity: 0,
+                      scale: 0.5,
+                      y: -30,
+                      filter: 'blur(4px)',
+                      transition: { duration: 0.5 },
+                    }}
                     style={{
-                      margin: '0 auto 24px',
                       display: 'flex',
                       justifyContent: 'center',
                       filter: hardcoreMode
@@ -334,13 +336,13 @@ function PortfolioContent() {
                       animation: 'pulse-glow 2s ease-in-out infinite',
                     }}
                   >
-                    <AvatarSlamSVG style={{ width: '45px', height: '45px' }} glowColor="var(--red-accent)" />
-                  </div>
+                    <AvatarSlamSVG style={{ width: '40px', height: '40px' }} glowColor="var(--red-accent)" />
+                  </motion.div>
 
                   <h1
                     style={{
                       fontFamily: 'var(--font-display)',
-                      fontSize: 'clamp(1.8rem, 6vw, 3.2rem)',
+                      fontSize: 'clamp(2rem, 6.5vw, 3.8rem)',
                       fontWeight: 700,
                       textTransform: 'uppercase',
                       letterSpacing: '0.2em',
@@ -348,102 +350,155 @@ function PortfolioContent() {
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       backgroundClip: 'text',
-                      marginBottom: '8px',
+                      margin: 0,
                       lineHeight: 1,
+                      filter: 'drop-shadow(0 0 35px rgba(212,175,55,0.45))',
+                      display: 'flex',
+                      gap: '0.35em',
+                      justifyContent: 'center',
                     }}
                   >
-                    UTKARSH SOLANKI
+                    <motion.span
+                      exit={{
+                        x: '-35vw',
+                        y: '-22vh',
+                        scale: 0.6,
+                        opacity: 0,
+                        transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
+                      }}
+                      style={{ display: 'inline-block' }}
+                    >
+                      UTKARSH
+                    </motion.span>
+                    <motion.span
+                      exit={{
+                        x: '35vw',
+                        y: '-22vh',
+                        scale: 0.6,
+                        opacity: 0,
+                        transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
+                      }}
+                      style={{ display: 'inline-block' }}
+                    >
+                      SOLANKI
+                    </motion.span>
                   </h1>
+                </motion.div>
+
+                {/* Lower Elements (Docked Below the Ring Area) */}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{
+                    opacity: 0,
+                    y: 35,
+                    transition: { duration: 0.5, ease: 'easeOut' },
+                  }}
+                  transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  style={{
+                    position: 'absolute',
+                    bottom: 'clamp(1.5rem, 4vh, 2.8rem)',
+                    left: 0,
+                    right: 0,
+                    textAlign: 'center',
+                    zIndex: 10,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '10px',
+                    width: '100%',
+                    pointerEvents: 'auto',
+                  }}
+                >
                   <p
                     style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 'min(0.75rem, 3vw)',
+                      fontSize: 'min(0.7rem, 2.8vw)',
                       color: 'var(--text-secondary)',
                       textTransform: 'uppercase',
                       letterSpacing: '0.3em',
+                      margin: 0,
                     }}
                   >
                     FULL STACK ENGINEER · THE MAIN EVENT
                   </p>
-                </div>
 
-                {/* Ticker */}
-                <div
-                  style={{
-                    marginTop: '32px',
-                    width: 'min(90%, 900px)',
-                    overflow: 'hidden',
-                    borderTop: '1px solid var(--border-subtle)',
-                    borderBottom: '1px solid var(--border-subtle)',
-                    padding: '8px 0',
-                  }}
-                >
+                  {/* Ticker */}
+                  <div
+                    style={{
+                      width: 'min(90vw, 850px)',
+                      overflow: 'hidden',
+                      borderTop: '1px solid var(--border-subtle)',
+                      borderBottom: '1px solid var(--border-subtle)',
+                      padding: '6px 0',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '40px',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.6rem',
+                        color: 'var(--text-dim)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        whiteSpace: 'nowrap',
+                        animation: 'ticker-scroll 40s linear infinite',
+                        width: 'max-content',
+                      }}
+                    >
+                      {[
+                        "⚡ By Gawd He's Broken In Half",
+                        '🔥 Business Is About To Pick Up',
+                        '💻 MERN Stack · 92 OVR',
+                        '⚡ Somebody Stop The Damn Build',
+                        '📱 React Native · 88 OVR',
+                        '🔥 As God As My Witness He Is Broken In Half',
+                        '🤖 AI Tooling · 75 OVR',
+                        '💻 TypeScript · 82 OVR',
+                      ].map((item, i) => (
+                        <span key={i}>{item}</span>
+                      ))}
+                    </div>
+                  </div>
+
                   <div
                     style={{
                       display: 'flex',
-                      gap: '40px',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.6rem',
-                      color: 'var(--text-dim)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.1em',
-                      whiteSpace: 'nowrap',
-                      animation: 'ticker-scroll 40s linear infinite',
-                      width: 'max-content',
-                    }}
-                  >
-                    {[
-                      "⚡ By Gawd He's Broken In Half",
-                      '🔥 Business Is About To Pick Up',
-                      '💻 MERN Stack · 92 OVR',
-                      '⚡ Somebody Stop The Damn Build',
-                      '📱 React Native · 88 OVR',
-                      '🔥 As God As My Witness He Is Broken In Half',
-                      '🤖 AI Tooling · 75 OVR',
-                      '💻 TypeScript · 82 OVR',
-                    ].map((item, i) => (
-                      <span key={i}>{item}</span>
-                    ))}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: '48px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '14px',
-                  }}
-                >
-                  <button
-                    type="button"
-                    className="portal-cta"
-                    aria-label="Enter the arena and view the match card"
-                    onClick={handleEnterArena}
-                    onMouseEnter={() => setPortalHovered(true)}
-                    onMouseLeave={() => setPortalHovered(false)}
-                    onFocus={() => setPortalHovered(true)}
-                    onBlur={() => setPortalHovered(false)}
-                  >
-                    ENTER THE ARENA
-                  </button>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.6rem',
-                      color: 'var(--text-dim)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.2em',
-                      display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
                       gap: '8px',
+                      marginTop: '4px',
                     }}
                   >
-                    OR SCROLL <span style={{ fontSize: '1rem' }}>▼</span>
-                  </span>
-                </div>
+                    <button
+                      type="button"
+                      className="portal-cta"
+                      aria-label="Enter the arena and view the match card"
+                      onClick={handleEnterArena}
+                      onMouseEnter={() => setPortalHovered(true)}
+                      onMouseLeave={() => setPortalHovered(false)}
+                      onFocus={() => setPortalHovered(true)}
+                      onBlur={() => setPortalHovered(false)}
+                    >
+                      ENTER THE ARENA
+                    </button>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.55rem',
+                        color: 'var(--text-dim)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.2em',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      OR SCROLL <span style={{ fontSize: '0.8rem' }}>▼</span>
+                    </span>
+                  </div>
+                </motion.div>
               </motion.section>
             )}
 
@@ -460,11 +515,13 @@ function PortfolioContent() {
                   inset: 0,
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'space-between',
                   paddingLeft: '120px',
-                  paddingRight: '40px',
+                  paddingRight: '60px',
+                  gap: '40px',
                 }}
               >
-                <div style={{ maxWidth: '800px', width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ maxWidth: '750px', width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <div style={{ marginBottom: '20px', display: 'flex', gap: '16px', alignItems: 'center' }}>
                     <RingSVG style={{ width: '50px', height: '50px' }} accentColor="var(--gold)" />
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -473,16 +530,51 @@ function PortfolioContent() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', paddingRight: '12px', flex: 1 }}>
-                    {projects.map((project, index) => (
-                      <MatchCard
-                        key={project.slug}
-                        project={project}
-                        index={index}
-                        onClick={() => setSelectedProject(project.slug)}
-                      />
-                    ))}
+                    {projects.length > 0 ? (
+                      projects.map((project, index) => (
+                        <MatchCard
+                          key={project.slug}
+                          project={project}
+                          index={index}
+                          onClick={() => setSelectedProject(project.slug)}
+                        />
+                      ))
+                    ) : (
+                      <div
+                        style={{
+                          padding: '32px',
+                          textAlign: 'center',
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          border: '1px dashed var(--border-subtle, rgba(255,255,255,0.1))',
+                          borderRadius: '6px',
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.8rem',
+                            color: 'var(--text-dim)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.15em',
+                            margin: 0,
+                          }}
+                        >
+                          NO MATCHES SCHEDULED TONIGHT
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* Right-side Fighter Card Photo */}
+                <SectionFighterPoster
+                  imageSrc="/images/user-clean.png"
+                  altText="Utkarsh Solanki Tale of the Tape"
+                  badgeText="TALE OF THE TAPE"
+                  title="UTKARSH SOLANKI"
+                  subtitle="MAIN EVENT FIGHTER"
+                  accentColor="var(--gold)"
+                />
               </motion.section>
             )}
 
@@ -499,10 +591,13 @@ function PortfolioContent() {
                   inset: 0,
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'space-between',
                   paddingLeft: '120px',
+                  paddingRight: '60px',
+                  gap: '40px',
                 }}
               >
-                <div style={{ maxWidth: '600px', width: '100%' }}>
+                <div style={{ maxWidth: '620px', width: '100%', flex: 1 }}>
                   <div style={{ marginBottom: '40px' }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--cyan)', letterSpacing: '0.3em' }}>HALL OF FAME</span>
                     <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>TITLE CONTRACTS & CREDENTIALS</h2>
@@ -513,6 +608,21 @@ function PortfolioContent() {
                     ))}
                   </div>
                 </div>
+
+                {/* Right-side Championship Belt Photo */}
+                <SectionFighterPoster
+                  imageSrc="/images/belt.png"
+                  altText="Triple Crown Championship Belt"
+                  badgeText="TROPHY ROOM"
+                  title="GOLDEN BELTS"
+                  subtitle="5X CERTIFIED CHAMP"
+                  accentColor="var(--cyan)"
+                  stats={[
+                    { label: 'TITLES', val: '5 Belts' },
+                    { label: 'TIER', val: 'Diamond' },
+                    { label: 'REIGN', val: 'Active' },
+                  ]}
+                />
               </motion.section>
             )}
 
@@ -529,10 +639,13 @@ function PortfolioContent() {
                   inset: 0,
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'space-between',
                   paddingLeft: '120px',
+                  paddingRight: '60px',
+                  gap: '40px',
                 }}
               >
-                <div style={{ maxWidth: '600px', width: '100%' }}>
+                <div style={{ maxWidth: '620px', width: '100%', flex: 1 }}>
                   <div style={{ marginBottom: '40px' }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--red-accent)', letterSpacing: '0.3em' }}>LOCKER ROOM</span>
                     <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>BACKSTAGE</h2>
@@ -541,6 +654,21 @@ function PortfolioContent() {
                     <TimelineLocker />
                   </div>
                 </div>
+
+                {/* Right-side Locker Room War Room Photo */}
+                <SectionFighterPoster
+                  imageSrc="/images/locker_room.png"
+                  altText="Backstage Training Ground"
+                  badgeText="WAR ROOM"
+                  title="LOCKER ROOM"
+                  subtitle="TRAINING ARSENAL"
+                  accentColor="var(--red-accent)"
+                  stats={[
+                    { label: 'STACK', val: 'MERN/TS' },
+                    { label: 'EXPERIENCE', val: 'Production' },
+                    { label: 'FOCUS', val: 'Full Stack' },
+                  ]}
+                />
               </motion.section>
             )}
 
@@ -556,29 +684,62 @@ function PortfolioContent() {
                   position: 'absolute',
                   inset: 0,
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '80px 2rem',
+                  gap: '60px',
+                  padding: '80px 3rem',
                 }}
               >
-                <div style={{ textAlign: 'center' }}>
+                <div style={{ textAlign: 'center', maxWidth: '480px' }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--gold)', letterSpacing: '0.3em' }}>FINAL PROMO</span>
-                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '3rem', fontWeight: 700, color: 'var(--gold)' }}>READY FOR THE NEXT MATCH?</h2>
-                  <p style={{ fontFamily: 'var(--font-body)', color: 'var(--text-secondary)', maxWidth: '400px', margin: '20px auto 40px' }}>
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 700, color: 'var(--gold)' }}>READY FOR THE NEXT MATCH?</h2>
+                  <p style={{ fontFamily: 'var(--font-body)', color: 'var(--text-secondary)', margin: '16px auto 32px', fontSize: '0.95rem' }}>
                     The arena is open. The ring is set. Let&apos;s build something legendary together.
                   </p>
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                     {[
-                      { label: '✉️ EMAIL', href: 'mailto:utkarsh@example.com', color: 'var(--gold)' },
-                      { label: '💼 LINKEDIN', href: '#', color: 'var(--cyan)' },
+                      { label: '✉️ EMAIL', href: 'mailto:utkarsh@example.com', color: 'var(--gold)', external: false },
+                      { label: '💼 LINKEDIN', href: 'https://www.linkedin.com/in/utkarsh-solanki-424b55291/', color: 'var(--cyan)', external: true },
                     ].map((link) => (
-                      <a key={link.label} href={link.href} style={{ padding: '12px 24px', border: `1px solid ${link.color}`, color: link.color, textDecoration: 'none', fontFamily: 'var(--font-display)', fontSize: '0.8rem', fontWeight: 600 }}>
+                      <a
+                        key={link.label}
+                        href={link.href}
+                        target={link.external ? '_blank' : undefined}
+                        rel={link.external ? 'noopener noreferrer' : undefined}
+                        style={{
+                          padding: '12px 24px',
+                          border: `1px solid ${link.color}`,
+                          color: link.color,
+                          textDecoration: 'none',
+                          fontFamily: 'var(--font-display)',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          transition: 'all 0.2s ease',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
                         {link.label}
                       </a>
                     ))}
                   </div>
                 </div>
+
+                {/* Right-side Contact Contract Sign Poster */}
+                <SectionFighterPoster
+                  imageSrc="/images/avatar.png"
+                  altText="Main Event Contract Signing"
+                  badgeText="SIGN CONTRACT"
+                  title="MAIN EVENT DEAL"
+                  subtitle="UTKARSH SOLANKI"
+                  accentColor="var(--gold)"
+                  stats={[
+                    { label: 'STATUS', val: 'Available' },
+                    { label: 'OFFER', val: 'Open' },
+                    { label: 'MATCH', val: 'Book Now' },
+                  ]}
+                />
               </motion.section>
             )}
           </AnimatePresence>

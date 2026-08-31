@@ -1,16 +1,15 @@
 'use client'
 
-import { useRef, useState, useEffect, Suspense, useMemo } from 'react'
+import { useRef, useState, useEffect, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Text, Float } from '@react-three/drei'
 import * as THREE from 'three'
 
 const IMAGE_PATHS = [
-  '/images/avatar.png',
-  '/images/belt.png',
-  '/images/locker_room.png',
-  '/images/ring.png',
-  '/images/utkarsh-action.png',
+  '/images/titantron-1.png',
+  '/images/titantron-2.png',
+  '/images/titantron-3.png',
+  '/images/titantron-4.png',
+  '/images/titantron-5.png',
 ]
 
 const TitantronMaterial = {
@@ -59,7 +58,7 @@ const TitantronMaterial = {
       color.rgb *= 1.1;
       gl_FragColor = color;
     }
-  `
+  `,
 }
 
 function loadTexture(loader: THREE.TextureLoader, path: string): Promise<THREE.Texture> {
@@ -86,35 +85,34 @@ function TitantronScreen() {
   const indices = useRef({ active: 0, next: 1 })
   const lastSwitchTime = useRef(0)
 
-  const uniforms = useMemo(() => ({
-    uTime: { value: 0 },
-    uBlend: { value: 0 },
-    uTexCurrent: { value: new THREE.Texture() },
-    uTexNext: { value: new THREE.Texture() },
-    uGlitch: { value: 0 },
-  }), [])
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uBlend: { value: 0 },
+      uTexCurrent: { value: new THREE.Texture() },
+      uTexNext: { value: new THREE.Texture() },
+      uGlitch: { value: 0 },
+    }),
+    []
+  )
 
-  // Lazy texture loading: first 2 immediately, rest after 5s
   useEffect(() => {
     const loader = new THREE.TextureLoader()
     let cancelled = false
 
-    // Load first 2 textures immediately
     const initialPaths = IMAGE_PATHS.slice(0, 2)
-    Promise.all(initialPaths.map(p => loadTexture(loader, p))).then((initial) => {
+    Promise.all(initialPaths.map((p) => loadTexture(loader, p))).then((initial) => {
       if (cancelled) return
       setLoadedTextures(initial)
 
-      // Load remaining textures after 5s
       const timer = setTimeout(() => {
         const remainingPaths = IMAGE_PATHS.slice(2)
-        Promise.all(remainingPaths.map(p => loadTexture(loader, p))).then((rest) => {
+        Promise.all(remainingPaths.map((p) => loadTexture(loader, p))).then((rest) => {
           if (cancelled) return
-          setLoadedTextures(prev => [...prev, ...rest])
+          setLoadedTextures((prev) => [...prev, ...rest])
         })
-      }, 5000)
+      }, 1500)
 
-      // Store timer for cleanup
       if (!cancelled) {
         cleanupTimer = timer
       }
@@ -133,11 +131,11 @@ function TitantronScreen() {
     const interval = 8.0
     const fadeDuration = 1.5
     const cycleTime = time % interval
-    
+
     let blend = 0
     let glitch = 0
 
-    if (cycleTime > (interval - fadeDuration)) {
+    if (cycleTime > interval - fadeDuration) {
       blend = (cycleTime - (interval - fadeDuration)) / fadeDuration
       glitch = Math.pow(blend, 3) * 0.15
     } else {
@@ -164,11 +162,7 @@ function TitantronScreen() {
   return (
     <mesh>
       <planeGeometry args={[14, 5]} />
-      <shaderMaterial
-        ref={materialRef}
-        {...TitantronMaterial}
-        uniforms={uniforms}
-      />
+      <shaderMaterial ref={materialRef} {...TitantronMaterial} uniforms={uniforms} />
     </mesh>
   )
 }
@@ -182,6 +176,102 @@ function TitantronFallback() {
   )
 }
 
+function SideBannerMesh({ label, x, rotY }: { label: string; x: number; rotY: number }) {
+  const texture = useMemo(() => {
+    if (typeof document === 'undefined') return new THREE.Texture()
+    const canvas = document.createElement('canvas')
+    canvas.width = 512
+    canvas.height = 1400
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return new THREE.Texture()
+
+    // Gold metallic gradient background
+    const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
+    grad.addColorStop(0, '#ffe57f')
+    grad.addColorStop(0.2, '#ffd700')
+    grad.addColorStop(0.5, '#d4af37')
+    grad.addColorStop(0.8, '#aa820a')
+    grad.addColorStop(1, '#ffe57f')
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    // Dark inset border
+    ctx.strokeStyle = '#0a0a10'
+    ctx.lineWidth = 24
+    ctx.strokeRect(24, 24, canvas.width - 48, canvas.height - 48)
+
+    // Inner gold pinstripe
+    ctx.strokeStyle = '#fff0a0'
+    ctx.lineWidth = 6
+    ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80)
+
+    // Stacked Vertical Lettering for perfect upright readability
+    const letters = label.split('')
+    const startY = 140
+    const availableHeight = canvas.height - 280
+    const stepY = availableHeight / (letters.length - 1)
+
+    // Letter shadow and dark outline for crisp contrast
+    ctx.shadowColor = 'rgba(0,0,0,0.9)'
+    ctx.shadowBlur = 18
+    ctx.shadowOffsetX = 5
+    ctx.shadowOffsetY = 5
+
+    ctx.font = '900 135px "Impact", "Arial Black", "Trebuchet MS", sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+
+    // Dark stroke outline behind white letters
+    ctx.strokeStyle = '#05050a'
+    ctx.lineWidth = 14
+    letters.forEach((char, i) => {
+      ctx.strokeText(char, canvas.width / 2, startY + i * stepY)
+    })
+
+    // Pure white letter fill
+    ctx.fillStyle = '#ffffff'
+    letters.forEach((char, i) => {
+      ctx.fillText(char, canvas.width / 2, startY + i * stepY)
+    })
+
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.colorSpace = THREE.SRGBColorSpace
+    tex.needsUpdate = true
+    return tex
+  }, [label])
+
+  return (
+    <group position={[x, -1, 1.8]} rotation={[0, rotY, 0]}>
+      {/* Outer frame */}
+      <mesh castShadow>
+        <boxGeometry args={[3.4, 8.8, 0.2]} />
+        <meshStandardMaterial
+          color="#d4af37"
+          emissive="#d4af37"
+          emissiveIntensity={0.6}
+          roughness={0.2}
+          metalness={0.7}
+        />
+      </mesh>
+
+      {/* Main branded face with CanvasTexture */}
+      <mesh position={[0, 0, 0.11]}>
+        <planeGeometry args={[3.2, 8.6]} />
+        <meshStandardMaterial
+          map={texture}
+          roughness={0.3}
+          metalness={0.4}
+          emissive="#ffd700"
+          emissiveIntensity={0.25}
+        />
+      </mesh>
+
+      {/* Edge highlight lighting */}
+      <pointLight position={[0, 0, 1.5]} intensity={25} color="#ffd700" distance={8} />
+    </group>
+  )
+}
+
 export default function Titantron() {
   return (
     <group position={[0, 8, -18]}>
@@ -192,7 +282,7 @@ export default function Titantron() {
 
       <TitantronScreen />
 
-      {/* Edge glow strips - FIXED: Used meshStandardMaterial */}
+      {/* Edge glow strips */}
       {[
         { pos: [0, 2.6, 0.05] as [number, number, number], scale: [14.2, 0.08, 1] as [number, number, number] },
         { pos: [0, -2.6, 0.05] as [number, number, number], scale: [14.2, 0.08, 1] as [number, number, number] },
@@ -203,51 +293,9 @@ export default function Titantron() {
         </mesh>
       ))}
 
-      {/* Side Branding Panels */}
-      {[
-        { x: -9.8, label: 'UTKARSH', rotY: 0.45 },
-        { x: 9.8, label: 'SOLANKI', rotY: -0.45 },
-      ].map(({ x, label, rotY }) => (
-        <group key={label} position={[x, -1, 1.8]} rotation={[0, rotY, 0]}>
-          <mesh castShadow>
-            <boxGeometry args={[3.4, 8.8, 0.2]} />
-            <meshStandardMaterial 
-              color="#d4af37" 
-              emissive="#d4af37" 
-              emissiveIntensity={1.2} 
-              roughness={0.1}
-              metalness={0.5}
-            />
-          </mesh>
-
-          <mesh position={[0, 0, 0.11]}>
-            <boxGeometry args={[3.2, 8.6, 0.02]} />
-            <meshBasicMaterial color="#000000" />
-          </mesh>
-
-          <mesh position={[0, 0, 0.12]}>
-            <planeGeometry args={[3.1, 8.5]} />
-            <meshBasicMaterial color="#d4af37" />
-          </mesh>
-
-          <Suspense fallback={null}>
-            <Float speed={2} rotationIntensity={0.05} floatIntensity={0.2}>
-              <Text
-                position={[0, 0, 0.15]}
-                rotation={[0, 0, -Math.PI / 2]}
-                fontSize={1.2}
-                font="https://fonts.gstatic.com/s/bebasneue/v14/JTUSjIg69CK48gW7PXoo9Wlhyw.ttf"
-                anchorX="center"
-                anchorY="middle"
-                letterSpacing={0.05}
-              >
-                {label}
-                <meshBasicMaterial color="#000000" />
-              </Text>
-            </Float>
-          </Suspense>
-        </group>
-      ))}
+      {/* Side Branding Panels with offline, reliable high-res Canvas Textures */}
+      <SideBannerMesh label="UTKARSH" x={-9.8} rotY={0.45} />
+      <SideBannerMesh label="SOLANKI" x={9.8} rotY={-0.45} />
 
       <pointLight position={[0, 4, -2]} intensity={50} color="#d4af37" distance={40} decay={2} />
     </group>
