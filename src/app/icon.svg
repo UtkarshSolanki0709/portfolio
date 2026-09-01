@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bg-grad" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#141424" />
+      <stop offset="70%" stop-color="#0a0a12" />
+      <stop offset="100%" stop-color="#040407" />
+    </radialGradient>
+
+    <!-- Gold Gradient -->
+    <linearGradient id="gold-main" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF4D0" />
+      <stop offset="35%" stop-color="#E5C158" />
+      <stop offset="70%" stop-color="#D4AF37" />
+      <stop offset="100%" stop-color="#8A6D1C" />
+    </linearGradient>
+
+    <!-- Gold Accent 2 -->
+    <linearGradient id="gold-bright" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#A88220" />
+      <stop offset="50%" stop-color="#FFE89E" />
+      <stop offset="100%" stop-color="#D4AF37" />
+    </linearGradient>
+
+    <!-- Cyan Neon Accent -->
+    <linearGradient id="cyan-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00FFFF" />
+      <stop offset="100%" stop-color="#00A3FF" />
+    </linearGradient>
+
+    <!-- Red Accent -->
+    <linearGradient id="red-accent" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF3366" />
+      <stop offset="100%" stop-color="#D50032" />
+    </linearGradient>
+
+    <!-- Shadow filter -->
+    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.8" />
+    </filter>
+  </defs>
+
+  <!-- Background Base: Modern Rounded Squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#bg-grad)" />
+
+  <!-- Outer Border Ring with subtle Gold & Cyan trim -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="none" stroke="url(#gold-main)" stroke-width="8" stroke-opacity="0.8" />
+  <rect x="28" y="28" width="456" height="456" rx="100" fill="none" stroke="url(#cyan-glow)" stroke-width="2" stroke-opacity="0.4" />
+
+  <!-- Championship Hexagon / Diamond Shield Plate -->
+  <polygon points="256,64 420,158 420,354 256,448 92,354 92,158" 
+           fill="#0d0d18" 
+           stroke="url(#gold-main)" 
+           stroke-width="12" 
+           stroke-linejoin="round"
+           filter="url(#drop-shadow)" />
+
+  <polygon points="256,84 402,168 402,344 256,428 110,344 110,168" 
+           fill="none" 
+           stroke="url(#cyan-glow)" 
+           stroke-width="3" 
+           stroke-opacity="0.6" />
+
+  <!-- Bold Geometric 'U' Monogram (The Utkarsh Champion Emblem) -->
+  <g>
+    <!-- Left & Right Columns + Curve of U -->
+    <path d="M152,148 L208,148 L208,284 C208,314 228,336 256,336 C284,336 304,314 304,284 L304,148 L360,148 L360,284 C360,344 314,392 256,392 C198,392 152,344 152,284 Z" 
+          fill="url(#gold-main)" />
+    
+    <!-- Sharp Champion Wing Accent on U -->
+    <polygon points="152,148 180,188 152,228" fill="url(#gold-bright)" />
+    <polygon points="360,148 332,188 360,228" fill="url(#gold-bright)" />
+    
+    <!-- Center Core Gem (Cyan Diamond Spark) -->
+    <polygon points="256,236 270,256 256,276 242,256" fill="url(#cyan-glow)" />
+    <circle cx="256" cy="256" r="3" fill="#FFFFFF" />
+  </g>
+
+  <!-- Top Crown Jewel / Ruby Accent -->
+  <polygon points="256,104 266,118 256,132 246,118" fill="url(#red-accent)" stroke="#FFF" stroke-width="1" />
+</svg>

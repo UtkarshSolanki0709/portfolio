@@ -2,10 +2,21 @@ import type { MetadataRoute } from 'next'
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: '*',
-      allow: '/',
-    },
-    sitemap: 'https://portfolio-livid-three-99.vercel.app/sitemap.xml',
+    rules: [
+      {
+        userAgent: '*',
+        allow: '/',
+      },
+      {
+        userAgent: 'Googlebot',
+        allow: '/',
+      },
+      {
+        userAgent: 'Bingbot',
+        allow: '/',
+      },
+    ],
+    sitemap: 'https://www.utkrsh.in/sitemap.xml',
+    host: 'https://www.utkrsh.in',
   }
 }
