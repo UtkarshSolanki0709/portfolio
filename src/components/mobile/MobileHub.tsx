@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { AnimatePresence, motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
@@ -91,6 +91,15 @@ export default function MobileHub({ onNextTrack }: MobileHubProps) {
   const toggleMute = usePortfolioStore((s) => s.toggleMute)
 
   const showAudioControls = !activeSection && !selectedProject
+
+  useEffect(() => {
+    if (!levelsOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLevelsOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [levelsOpen])
 
   return (
     <main
@@ -218,6 +227,7 @@ export default function MobileHub({ onNextTrack }: MobileHubProps) {
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="pixel-hub-glass"
             role="dialog"
+            aria-modal="true"
             aria-label="Level select"
             style={{
               width: '100%',

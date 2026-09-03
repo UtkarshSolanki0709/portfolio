@@ -217,7 +217,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`dark ${barlowCondensed.variable} ${rajdhani.variable} ${shareTechMono.variable} ${bebasNeue.variable} ${pressStart.variable}`}
+    >
       <head>
         <script
           type="application/ld+json"
@@ -225,7 +229,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${barlowCondensed.variable} ${rajdhani.variable} ${shareTechMono.variable} ${bebasNeue.variable} ${pressStart.variable} dark`}
+        className="dark"
         style={{
           fontFamily: "var(--font-rajdhani, 'Rajdhani', sans-serif)",
         }}

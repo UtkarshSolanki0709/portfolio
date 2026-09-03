@@ -50,6 +50,12 @@
   --font-display: var(--font-barlow), "Barlow Condensed", sans-serif;
   --font-body: var(--font-rajdhani), "Rajdhani", sans-serif;
   --font-mono: var(--font-share-tech), "Share Tech Mono", monospace;
+}
+
+body {
+  --font-display: var(--font-barlow), "Barlow Condensed", sans-serif;
+  --font-body: var(--font-rajdhani), "Rajdhani", sans-serif;
+  --font-mono: var(--font-share-tech), "Share Tech Mono", monospace;
 
   /* Spacing */
   --scene-padding: 2rem;

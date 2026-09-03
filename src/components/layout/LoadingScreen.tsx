@@ -27,7 +27,7 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
       lastTime = now
       
       // Reach 100% in ~500ms
-      const increment = (Math.sin(now * 0.1) + 1.5) * (delta * 0.25)
+      const increment = delta * 0.2
       progress += increment
       
       if (progress >= 100) {
