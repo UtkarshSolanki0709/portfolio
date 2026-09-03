@@ -14,10 +14,13 @@ const typeStyles = {
 interface TimelineNodeProps {
   milestone: Milestone
   index?: number
+  /** Mobile hub variant: descriptions always expanded (hover is unreliable on touch) */
+  compact?: boolean
 }
 
-const TimelineNode = ({ milestone, index = 0 }: TimelineNodeProps) => {
+const TimelineNode = ({ milestone, index = 0, compact = false }: TimelineNodeProps) => {
   const [isHovered, setIsHovered] = useState(false)
+  const expanded = isHovered || compact
   const style = typeStyles[milestone.type] || { color: 'var(--gold)', icon: '💼' }
 
   return (
@@ -125,11 +128,11 @@ const TimelineNode = ({ milestone, index = 0 }: TimelineNodeProps) => {
 
         {/* Dynamic Expanding Paragraph */}
         <motion.div
-          initial={{ height: 0, opacity: 0, marginTop: 0 }}
+          initial={{ height: compact ? 'auto' : 0, opacity: compact ? 1 : 0, marginTop: compact ? 6 : 0 }}
           animate={{
-            height: isHovered ? 'auto' : 0,
-            opacity: isHovered ? 1 : 0,
-            marginTop: isHovered ? 6 : 0,
+            height: expanded ? 'auto' : 0,
+            opacity: expanded ? 1 : 0,
+            marginTop: expanded ? 6 : 0,
           }}
           transition={{
             duration: 0.35,
@@ -158,7 +161,7 @@ const TimelineNode = ({ milestone, index = 0 }: TimelineNodeProps) => {
   )
 }
 
-const TimelineLocker = () => {
+const TimelineLocker = ({ compact = false }: { compact?: boolean }) => {
   return (
     <div
       style={{
@@ -187,6 +190,7 @@ const TimelineLocker = () => {
             key={`${milestone.year}-${milestone.title}`}
             milestone={milestone}
             index={index}
+            compact={compact}
           />
         ))}
       </div>
