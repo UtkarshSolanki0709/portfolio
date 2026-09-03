@@ -17,6 +17,7 @@ import { AvatarSlamSVG, RingSVG } from '@/components/ui/WrestlingIcons'
 import { useArenaAudio, TRACK_METADATA } from '@/hooks/useArenaAudio'
 import { Howler } from 'howler'
 import { useKonamiCode } from '@/hooks/useKonamiCode'
+import { getInitialViewportIsMobile } from '@/hooks/useDeviceCapability'
 import { projects } from '@/data/projects'
 import { certificates } from '@/data/certificates'
 import { toasts as toastData } from '@/data/toasts'
@@ -24,6 +25,8 @@ import { toasts as toastData } from '@/data/toasts'
 // Dynamic imports for 3D components (avoids SSR issues with Three.js)
 const SceneWrapper = dynamic(() => import('@/components/layout/SceneWrapper'), { ssr: false })
 const Arena = dynamic(() => import('@/components/3d/Arena'), { ssr: false })
+// Mobile 8-bit hub (PRD): only fetched on <768px first-load viewports
+const MobileHub = dynamic(() => import('@/components/mobile/MobileHub'), { ssr: false })
 
 const SECTIONS = ['entrance', 'matchcard', 'championships', 'backstage', 'contact']
 
@@ -45,6 +48,9 @@ function PortfolioContent() {
   const triggerPortalPulse = usePortfolioStore(s => s.triggerPortalPulse)
 
   const shouldShowPromo = !isLoading && !hasSeenPromo
+
+  // Decision 1: locked at first load — rotation never swaps experiences mid-session
+  const [isMobileViewport] = useState(getInitialViewportIsMobile)
 
   // Deferred 3D scene mount — let 2D UI paint first as LCP element
   const [sceneReady, setSceneReady] = useState(false)
@@ -92,7 +98,7 @@ function PortfolioContent() {
 
   // Navigation Handler (Wheel / Touch)
   useEffect(() => {
-    if (isLoading || selectedProject) return
+    if (isLoading || selectedProject || isMobileViewport) return
 
     const handleWheel = (e: WheelEvent) => {
       if (isNavigating.current) return
@@ -109,7 +115,7 @@ function PortfolioContent() {
 
     window.addEventListener('wheel', handleWheel, { passive: true })
     return () => window.removeEventListener('wheel', handleWheel)
-  }, [isLoading, selectedProject, activeScene, setActiveScene])
+  }, [isLoading, selectedProject, isMobileViewport, activeScene, setActiveScene])
 
   // Konami Code Easter Egg
   useKonamiCode(useCallback(() => {
@@ -191,6 +197,26 @@ function PortfolioContent() {
     window.addEventListener('click', handleClick)
     return () => window.removeEventListener('click', handleClick)
   }, [incrementAttitude])
+
+  // ═══ MOBILE PATH — 8-bit hub, no Three.js (PRD §5/§10) ═══
+  if (isMobileViewport) {
+    return (
+      <>
+        <LoadingScreen
+          onEnter={() => {
+            try {
+              if (Howler.ctx) Howler.ctx.resume()
+            } catch (e) {
+              console.warn(e)
+            }
+            playSound('theme')
+          }}
+        />
+        {shouldShowPromo && <IntroPromo onComplete={() => setHasSeenPromo(true)} />}
+        {!isLoading && <MobileHub />}
+      </>
+    )
+  }
 
   return (
     <>
@@ -698,7 +724,7 @@ function PortfolioContent() {
                   </p>
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                     {[
-                      { label: '✉️ EMAIL', href: 'mailto:utkarsh@example.com', color: 'var(--gold)', external: false },
+                      { label: '✉️ EMAIL', href: 'mailto:solankiut07@gmail.com', color: 'var(--gold)', external: false },
                       { label: '💼 LINKEDIN', href: 'https://www.linkedin.com/in/utkarsh-solanki-424b55291/', color: 'var(--cyan)', external: true },
                     ].map((link) => (
                       <a

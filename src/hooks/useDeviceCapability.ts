@@ -47,3 +47,12 @@ export function useDeviceCapability(): DeviceCapability {
 
   return capability
 }
+
+/**
+ * PRD §6: mobile vs desktop is decided ONCE at first client load.
+ * Resize/orientation never switches experiences mid-session.
+ */
+export function getInitialViewportIsMobile(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.innerWidth < 768
+}
