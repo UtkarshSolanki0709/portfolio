@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Barlow_Condensed, Rajdhani, Share_Tech_Mono, Bebas_Neue } from "next/font/google";
+import { Barlow_Condensed, Rajdhani, Share_Tech_Mono, Bebas_Neue, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -30,6 +30,13 @@ const shareTechMono = Share_Tech_Mono({
 
 const bebasNeue = Bebas_Neue({
   variable: "--font-bebas",
+  subsets: ["latin"],
+  weight: "400",
+  display: "swap",
+});
+
+const pressStart = Press_Start_2P({
+  variable: "--font-press-start",
   subsets: ["latin"],
   weight: "400",
   display: "swap",
@@ -217,7 +224,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${barlowCondensed.variable} ${rajdhani.variable} ${shareTechMono.variable} ${bebasNeue.variable} dark`}
+        className={`${barlowCondensed.variable} ${rajdhani.variable} ${shareTechMono.variable} ${bebasNeue.variable} ${pressStart.variable} dark`}
         style={{
           fontFamily: "var(--font-rajdhani, 'Rajdhani', sans-serif)",
         }}

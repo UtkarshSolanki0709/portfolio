@@ -490,3 +490,91 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ══════════════════════════════════════════════
+   MOBILE 8-BIT HUB (PRD §8/§9) — <768px layer
+   ══════════════════════════════════════════════ */
+
+:root {
+  --font-pixel: var(--font-press-start), "Courier New", monospace;
+}
+
+/* Scoped pixel variant: inline styles in reused overlays read var(--font-display),
+   so re-pointing the var inside .pixel-theme reskins them without forking files. */
+.pixel-theme {
+  --font-display: var(--font-pixel);
+  image-rendering: pixelated;
+}
+
+/* PRD §9: pixel font headers only — force functional text back to readable fonts
+   (!important beats the components' inline fontFamily). */
+.pixel-theme button,
+.pixel-theme p,
+.pixel-theme li,
+.pixel-theme a {
+  font-family: "Barlow Condensed", sans-serif !important;
+  letter-spacing: 0.08em !important;
+}
+
+.pixel-theme h1,
+.pixel-theme h2,
+.pixel-theme h3 {
+  font-family: var(--font-pixel) !important;
+  letter-spacing: 0.05em !important;
+  line-height: 1.6 !important; /* Press Start 2P has a tall box; prevent clipping */
+}
+
+/* Glassmorphic level panel + tiles */
+.pixel-hub-glass {
+  background: rgba(10, 10, 15, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px); /* iOS Safari */
+  border: 2px solid var(--border-gold);
+  box-shadow: var(--glow-gold), inset 0 0 0 2px rgba(212, 175, 55, 0.12);
+}
+
+.pixel-level {
+  min-width: 44px;
+  min-height: 44px;
+  font-family: "Barlow Condensed", sans-serif;
+  color: var(--text-primary);
+  background: rgba(18, 18, 26, 0.72);
+  border: 2px solid var(--border-gold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  text-align: left;
+  transition: transform 120ms ease, background 120ms ease;
+}
+.pixel-level:active {
+  transform: scale(0.97);
+  background: rgba(212, 175, 55, 0.18);
+}
+.pixel-level:focus-visible {
+  outline: 2px solid var(--gold-light);
+  outline-offset: 2px;
+}
+
+.pixel-cta {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 14px 28px;
+  font-family: var(--font-pixel);
+  font-size: 0.8rem;
+  color: var(--bg-dark);
+  background: var(--gold);
+  border: none;
+  box-shadow: 0 4px 0 var(--gold-dim), var(--glow-gold); /* pixel "button depth" */
+  cursor: pointer;
+  letter-spacing: 0.1em;
+}
+.pixel-cta:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--gold-dim), var(--glow-gold);
+}
+.pixel-cta:focus-visible {
+  outline: 2px solid var(--gold-light);
+  outline-offset: 2px;
+}
