@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePortfolioStore } from '@/lib/store'
 import { AvatarSlamSVG } from '@/components/ui/WrestlingIcons'
@@ -10,13 +10,13 @@ interface LoadingScreenProps {
 }
 
 export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
-  const { isLoading, setLoading, loadingProgress, setLoadingProgress } =
-    usePortfolioStore()
-  const [showLogo, setShowLogo] = useState(false)
-  const [showContent, setShowContent] = useState(false)
+  const isLoading = usePortfolioStore((s) => s.isLoading)
+  const setLoading = usePortfolioStore((s) => s.setLoading)
+  const loadingProgress = usePortfolioStore((s) => s.loadingProgress)
+  const setLoadingProgress = usePortfolioStore((s) => s.setLoadingProgress)
   const progressRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Animate progress bar — faster to reduce LCP delay
+  // Animate progress bar — fast increment without excessive re-renders
   useEffect(() => {
     let progress = 0
     let lastTime = performance.now()
@@ -26,8 +26,8 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
       const delta = now - lastTime
       lastTime = now
       
-      // Faster increment: ~1.5s to reach 100% (was ~3-4s)
-      const increment = (Math.sin(now * 0.1) + 1.5) * (delta * 0.12)
+      // Reach 100% in ~500ms
+      const increment = (Math.sin(now * 0.1) + 1.5) * (delta * 0.25)
       progress += increment
       
       if (progress >= 100) {
@@ -35,22 +35,12 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
         if (progressRef.current) clearInterval(progressRef.current)
       }
       setLoadingProgress(Math.min(progress, 100))
-    }, 50)
+    }, 60)
     
     return () => {
       if (progressRef.current) clearInterval(progressRef.current)
     }
   }, [setLoadingProgress])
-
-  // Trigger logo slam after mount
-  useEffect(() => {
-    const t1 = setTimeout(() => setShowLogo(true), 200)
-    const t2 = setTimeout(() => setShowContent(true), 500)
-    return () => {
-      clearTimeout(t1)
-      clearTimeout(t2)
-    }
-  }, [])
 
   // Manual dismiss (click anywhere or button)
   const handleDismiss = useCallback(() => {
@@ -113,35 +103,17 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
           <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '40px', height: '40px', borderBottom: '2px solid var(--gold)', borderRight: '2px solid var(--gold)', opacity: 0.4 }} />
 
           {/* Custom SVG Avatar Logo */}
-          <motion.div
-            initial={{ opacity: 0, rotate: 0, scale: 0.5 }}
-            animate={showLogo ? { opacity: 1, rotate: 45, scale: 1.2 } : {}}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
+          <div
             style={{
               marginBottom: '32px',
-              filter: 'drop-shadow(0 0 15px rgba(255,23,68,0.5))'
+              filter: 'drop-shadow(0 0 15px rgba(255,23,68,0.5))',
             }}
           >
             <AvatarSlamSVG style={{ width: '45px', height: '45px' }} glowColor="var(--red-accent)" />
-          </motion.div>
+          </div>
 
-          {/* Name + Title */}
-          <motion.div
-            initial={{ scale: 3, opacity: 0, filter: 'blur(10px)' }}
-            animate={
-              showLogo
-                ? { scale: 1, opacity: 1, filter: 'blur(0px)' }
-                : {}
-            }
-            transition={{
-              duration: 0.8,
-              ease: [0.16, 1, 0.3, 1],
-              scale: {
-                type: 'spring',
-                damping: 12,
-                stiffness: 200,
-              },
-            }}
+          {/* Name + Title - Rendered with opacity: 1 on SSR for instant LCP */}
+          <div
             style={{
               textAlign: 'center',
               position: 'relative',
@@ -195,13 +167,10 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
             >
               MAIN EVENT
             </span>
-          </motion.div>
+          </div>
 
           {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={showContent ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.2 }}
+          <p
             style={{
               marginTop: '16px',
               fontFamily: 'var(--font-mono)',
@@ -212,13 +181,10 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
             }}
           >
             FULL STACK ENGINEER
-          </motion.p>
+          </p>
 
           {/* Loading bar / Enter Button container */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={showContent ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.4 }}
+          <div
             style={{
               marginTop: '40px',
               width: 'min(400px, 80vw)',
@@ -242,15 +208,15 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
                     position: 'relative',
                   }}
                 >
-                  <motion.div
+                  <div
                     style={{
                       height: '100%',
                       background: 'linear-gradient(90deg, var(--gold-dim), var(--gold), var(--gold-light))',
                       borderRadius: '2px',
                       position: 'relative',
                       width: `${loadingProgress}%`,
+                      transition: 'width 0.08s linear',
                     }}
-                    transition={{ duration: 0.15, ease: 'linear' }}
                   >
                     <div
                       style={{
@@ -261,7 +227,7 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
                         animation: 'shimmer 1.5s infinite linear',
                       }}
                     />
-                  </motion.div>
+                  </div>
                 </div>
 
                 {/* Percentage */}
@@ -282,11 +248,8 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
                 </div>
               </>
             ) : (
-              <motion.button
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(212,175,55,0.4)' }}
-                whileTap={{ scale: 0.95 }}
+              <button
+                type="button"
                 onClick={handleDismiss}
                 style={{
                   width: '100%',
@@ -305,13 +268,11 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
                   overflow: 'hidden',
                   boxShadow: '0 0 15px rgba(212,175,55,0.2)',
                   animation: 'pulse-glow 2s infinite ease-in-out',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                 }}
               >
                 <span style={{ position: 'relative', zIndex: 2 }}>ENTER THE ARENA</span>
-                {/* Internal shine animation */}
-                <motion.div
-                  animate={{ x: ['-100%', '200%'] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                <div
                   style={{
                     position: 'absolute',
                     top: 0,
@@ -320,19 +281,15 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
                     height: '100%',
                     background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent)',
                     transform: 'skewX(-20deg)',
+                    animation: 'shimmer 2s infinite linear',
                   }}
                 />
-              </motion.button>
+              </button>
             )}
-          </motion.div>
-
-
+          </div>
 
           {/* Controller hints bar */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={showContent ? { opacity: 0.6, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.8 }}
+          <div
             style={{
               position: 'absolute',
               bottom: '24px',
@@ -343,6 +300,7 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
               color: 'var(--text-dim)',
               textTransform: 'uppercase',
               letterSpacing: '0.1em',
+              opacity: 0.6,
             }}
           >
             {[
@@ -372,7 +330,7 @@ export default function LoadingScreen({ onEnter }: LoadingScreenProps) {
                 {btn.label}
               </div>
             ))}
-          </motion.div>
+          </div>
 
           {/* Background particles / ambient light */}
           <div

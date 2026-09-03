@@ -9,6 +9,7 @@ interface PortfolioState {
 
   // Scene
   activeScene: number
+  visitedScenes: number[]
   setActiveScene: (scene: number) => void
 
   // Entrance Portal
@@ -59,7 +60,14 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
 
   // Scene
   activeScene: 0,
-  setActiveScene: (scene) => set({ activeScene: scene }),
+  visitedScenes: [0],
+  setActiveScene: (scene) =>
+    set((state) => ({
+      activeScene: scene,
+      visitedScenes: state.visitedScenes.includes(scene)
+        ? state.visitedScenes
+        : [...state.visitedScenes, scene],
+    })),
 
   // Entrance Portal
   portalHovered: false,

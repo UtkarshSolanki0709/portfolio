@@ -47,9 +47,9 @@
   --glow-red: 0 0 20px rgba(255, 23, 68, 0.4);
 
   /* Fonts */
-  --font-display: "Barlow Condensed", sans-serif;
-  --font-body: "Rajdhani", sans-serif;
-  --font-mono: "Share Tech Mono", monospace;
+  --font-display: var(--font-barlow), "Barlow Condensed", sans-serif;
+  --font-body: var(--font-rajdhani), "Rajdhani", sans-serif;
+  --font-mono: var(--font-share-tech), "Share Tech Mono", monospace;
 
   /* Spacing */
   --scene-padding: 2rem;
@@ -499,10 +499,8 @@ body {
   --font-pixel: var(--font-press-start), "Courier New", monospace;
 }
 
-/* Scoped pixel variant: inline styles in reused overlays read var(--font-display),
-   so re-pointing the var inside .pixel-theme reskins them without forking files. */
+/* Scoped pixel variant: retain pixelated rendering for 8-bit assets without distorting card content */
 .pixel-theme {
-  --font-display: var(--font-pixel);
   image-rendering: pixelated;
 }
 

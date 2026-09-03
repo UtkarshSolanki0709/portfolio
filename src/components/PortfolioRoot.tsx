@@ -7,17 +7,11 @@ import IntroPromo from '@/components/ui/IntroPromo'
 import { usePortfolioStore } from '@/lib/store'
 import LoadingScreen from '@/components/layout/LoadingScreen'
 import MenuPanel from '@/components/ui/MenuPanel'
-import MatchCard from '@/components/ui/MatchCard'
-import ProjectDetailOverlay from '@/components/ui/ProjectDetailOverlay'
-import CertificatePlaque from '@/components/ui/CertificatePlaque'
-import TimelineLocker from '@/components/ui/TimelineLocker'
-import SectionFighterPoster from '@/components/ui/SectionFighterPoster'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { AvatarSlamSVG, RingSVG } from '@/components/ui/WrestlingIcons'
 import { useArenaAudio, TRACK_METADATA } from '@/hooks/useArenaAudio'
 import { Howler } from 'howler'
 import { useKonamiCode } from '@/hooks/useKonamiCode'
-import { getInitialViewportIsMobile } from '@/hooks/useDeviceCapability'
 import { projects } from '@/data/projects'
 import { certificates } from '@/data/certificates'
 import { toasts as toastData } from '@/data/toasts'
@@ -28,7 +22,25 @@ const Arena = dynamic(() => import('@/components/3d/Arena'), { ssr: false })
 // Mobile 8-bit hub (PRD): only fetched on <768px first-load viewports
 const MobileHub = dynamic(() => import('@/components/mobile/MobileHub'), { ssr: false })
 
+// Code-split heavy scene components — only loaded when their scene activates
+const MatchCard = dynamic(() => import('@/components/ui/MatchCard'))
+const ProjectDetailOverlay = dynamic(() => import('@/components/ui/ProjectDetailOverlay'))
+const CertificatePlaque = dynamic(() => import('@/components/ui/CertificatePlaque'))
+const TimelineLocker = dynamic(() => import('@/components/ui/TimelineLocker'))
+const SectionFighterPoster = dynamic(() => import('@/components/ui/SectionFighterPoster'))
+
 const SECTIONS = ['entrance', 'matchcard', 'championships', 'backstage', 'contact']
+
+// CSS transition style for scene switching (replaces AnimatePresence mount/unmount)
+const sceneTransitionStyle = (isActive: boolean): React.CSSProperties => ({
+  position: 'absolute',
+  inset: 0,
+  opacity: isActive ? 1 : 0,
+  visibility: isActive ? 'visible' : 'hidden',
+  transition: 'opacity 0.5s ease-in-out, visibility 0.5s ease-in-out',
+  willChange: isActive ? 'opacity' : 'auto',
+  pointerEvents: isActive ? 'auto' : 'none',
+})
 
 function PortfolioContent() {
   // Granular Zustand selectors — only re-render when the specific slice changes
@@ -38,6 +50,8 @@ function PortfolioContent() {
   const incrementAttitude = usePortfolioStore(s => s.incrementAttitude)
   const activeScene = usePortfolioStore(s => s.activeScene)
   const setActiveScene = usePortfolioStore(s => s.setActiveScene)
+
+  const visitedScenes = usePortfolioStore(s => s.visitedScenes)
   const isMuted = usePortfolioStore(s => s.isMuted)
   const toggleMute = usePortfolioStore(s => s.toggleMute)
   const hasSeenPromo = usePortfolioStore(s => s.hasSeenPromo)
@@ -49,8 +63,14 @@ function PortfolioContent() {
 
   const shouldShowPromo = !isLoading && !hasSeenPromo
 
-  // Decision 1: locked at first load — rotation never swaps experiences mid-session
-  const [isMobileViewport] = useState(getInitialViewportIsMobile)
+  // Reactive mobile viewport check — reliably switches on load or device emulation resize
+  const [isMobileViewport, setIsMobileViewport] = useState(false)
+  useEffect(() => {
+    const update = () => setIsMobileViewport(window.innerWidth < 768)
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
 
   // Deferred 3D scene mount — let 2D UI paint first as LCP element
   const [sceneReady, setSceneReady] = useState(false)
@@ -213,7 +233,7 @@ function PortfolioContent() {
           }}
         />
         {shouldShowPromo && <IntroPromo onComplete={() => setHasSeenPromo(true)} />}
-        {!isLoading && <MobileHub />}
+        {!isLoading && <MobileHub onNextTrack={nextTrack} />}
       </>
     )
   }
@@ -307,29 +327,12 @@ function PortfolioContent() {
           )}
 
           {/* ═══════ SCENE 1 — ENTRANCE ═══════ */}
-          <AnimatePresence mode="wait">
-            {activeScene === 0 && (
-              <motion.section
-                key="entrance"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.8, ease: 'easeInOut' }}
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  pointerEvents: 'none',
-                }}
-              >
+            <section
+              aria-hidden={activeScene !== 0}
+              style={sceneTransitionStyle(activeScene === 0)}
+            >
                 {/* Upper Floating Name (Hovering Above/Over the Ring) */}
-                <motion.div
-                  initial={{ opacity: 0, y: -25, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{
-                    opacity: 0,
-                    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
-                  }}
-                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                <div
                   style={{
                     position: 'absolute',
                     top: 'clamp(20%, 25vh, 28%)',
@@ -343,16 +346,12 @@ function PortfolioContent() {
                     alignItems: 'center',
                     gap: '10px',
                     width: '100%',
+                    transform: activeScene === 0 ? 'translateY(0)' : 'translateY(-25px)',
+                    opacity: activeScene === 0 ? 1 : 0,
+                    transition: 'transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1)',
                   }}
                 >
-                  <motion.div
-                    exit={{
-                      opacity: 0,
-                      scale: 0.5,
-                      y: -30,
-                      filter: 'blur(4px)',
-                      transition: { duration: 0.5 },
-                    }}
+                  <div
                     style={{
                       display: 'flex',
                       justifyContent: 'center',
@@ -363,7 +362,7 @@ function PortfolioContent() {
                     }}
                   >
                     <AvatarSlamSVG style={{ width: '40px', height: '40px' }} glowColor="var(--red-accent)" />
-                  </motion.div>
+                  </div>
 
                   <h1
                     style={{
@@ -384,43 +383,13 @@ function PortfolioContent() {
                       justifyContent: 'center',
                     }}
                   >
-                    <motion.span
-                      exit={{
-                        x: '-35vw',
-                        y: '-22vh',
-                        scale: 0.6,
-                        opacity: 0,
-                        transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
-                      }}
-                      style={{ display: 'inline-block' }}
-                    >
-                      UTKARSH
-                    </motion.span>
-                    <motion.span
-                      exit={{
-                        x: '35vw',
-                        y: '-22vh',
-                        scale: 0.6,
-                        opacity: 0,
-                        transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
-                      }}
-                      style={{ display: 'inline-block' }}
-                    >
-                      SOLANKI
-                    </motion.span>
+                    <span style={{ display: 'inline-block' }}>UTKARSH</span>
+                    <span style={{ display: 'inline-block' }}>SOLANKI</span>
                   </h1>
-                </motion.div>
+                </div>
 
                 {/* Lower Elements (Docked Below the Ring Area) */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{
-                    opacity: 0,
-                    y: 35,
-                    transition: { duration: 0.5, ease: 'easeOut' },
-                  }}
-                  transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                <div
                   style={{
                     position: 'absolute',
                     bottom: 'clamp(1.5rem, 4vh, 2.8rem)',
@@ -434,6 +403,9 @@ function PortfolioContent() {
                     gap: '10px',
                     width: '100%',
                     pointerEvents: 'auto',
+                    transform: activeScene === 0 ? 'translateY(0)' : 'translateY(30px)',
+                    opacity: activeScene === 0 ? 1 : 0,
+                    transition: 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s, opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s',
                   }}
                 >
                   <p
@@ -524,251 +496,237 @@ function PortfolioContent() {
                       OR SCROLL <span style={{ fontSize: '0.8rem' }}>▼</span>
                     </span>
                   </div>
-                </motion.div>
-              </motion.section>
-            )}
+                </div>
+            </section>
 
             {/* ═══════ SCENE 2 — MATCH CARD ═══════ */}
-            {activeScene === 1 && (
-              <motion.section
-                key="matchcard"
-                initial={{ opacity: 0, x: 100 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -100 }}
-                transition={{ duration: 0.8 }}
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingLeft: '120px',
-                  paddingRight: '60px',
-                  gap: '40px',
-                }}
-              >
-                <div style={{ maxWidth: '750px', width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <div style={{ marginBottom: '20px', display: 'flex', gap: '16px', alignItems: 'center' }}>
-                    <RingSVG style={{ width: '50px', height: '50px' }} accentColor="var(--gold)" />
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--gold)', letterSpacing: '0.3em' }}>TONIGHT&apos;S CARD</span>
-                      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>MATCH CARD</h2>
+            <section
+              aria-hidden={activeScene !== 1}
+              style={{
+                ...sceneTransitionStyle(activeScene === 1),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingLeft: '120px',
+                paddingRight: '60px',
+                gap: '40px',
+              }}
+            >
+              {visitedScenes.includes(1) && (
+                <>
+                  <div style={{ maxWidth: '750px', width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <div style={{ marginBottom: '20px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                      <RingSVG style={{ width: '50px', height: '50px' }} accentColor="var(--gold)" />
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--gold)', letterSpacing: '0.3em' }}>TONIGHT&apos;S CARD</span>
+                        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>MATCH CARD</h2>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', paddingRight: '12px', flex: 1 }}>
-                    {projects.length > 0 ? (
-                      projects.map((project, index) => (
-                        <MatchCard
-                          key={project.slug}
-                          project={project}
-                          index={index}
-                          onClick={() => setSelectedProject(project.slug)}
-                        />
-                      ))
-                    ) : (
-                      <div
-                        style={{
-                          padding: '32px',
-                          textAlign: 'center',
-                          background: 'rgba(255, 255, 255, 0.02)',
-                          border: '1px dashed var(--border-subtle, rgba(255,255,255,0.1))',
-                          borderRadius: '6px',
-                        }}
-                      >
-                        <p
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', paddingRight: '12px', flex: 1 }}>
+                      {projects.length > 0 ? (
+                        projects.map((project, index) => (
+                          <MatchCard
+                            key={project.slug}
+                            project={project}
+                            index={index}
+                            onClick={() => setSelectedProject(project.slug)}
+                          />
+                        ))
+                      ) : (
+                        <div
                           style={{
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: '0.8rem',
-                            color: 'var(--text-dim)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.15em',
-                            margin: 0,
+                            padding: '32px',
+                            textAlign: 'center',
+                            background: 'rgba(255, 255, 255, 0.02)',
+                            border: '1px dashed var(--border-subtle, rgba(255,255,255,0.1))',
+                            borderRadius: '6px',
                           }}
                         >
-                          NO MATCHES SCHEDULED TONIGHT
-                        </p>
-                      </div>
-                    )}
+                          <p
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '0.8rem',
+                              color: 'var(--text-dim)',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.15em',
+                              margin: 0,
+                            }}
+                          >
+                            NO MATCHES SCHEDULED TONIGHT
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Right-side Fighter Card Photo */}
-                <SectionFighterPoster
-                  imageSrc="/images/user-clean.png"
-                  altText="Utkarsh Solanki Tale of the Tape"
-                  badgeText="TALE OF THE TAPE"
-                  title="UTKARSH SOLANKI"
-                  subtitle="MAIN EVENT FIGHTER"
-                  accentColor="var(--gold)"
-                />
-              </motion.section>
-            )}
+                  {/* Right-side Fighter Card Photo */}
+                  <SectionFighterPoster
+                    imageSrc="/images/user-clean.png"
+                    altText="Utkarsh Solanki Tale of the Tape"
+                    badgeText="TALE OF THE TAPE"
+                    title="UTKARSH SOLANKI"
+                    subtitle="MAIN EVENT FIGHTER"
+                    accentColor="var(--gold)"
+                  />
+                </>
+              )}
+            </section>
 
             {/* ═══════ SCENE 3 — CHAMPIONSHIPS ═══════ */}
-            {activeScene === 2 && (
-              <motion.section
-                key="championships"
-                initial={{ opacity: 0, y: 100 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -100 }}
-                transition={{ duration: 0.8 }}
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingLeft: '120px',
-                  paddingRight: '60px',
-                  gap: '40px',
-                }}
-              >
-                <div style={{ maxWidth: '620px', width: '100%', flex: 1 }}>
-                  <div style={{ marginBottom: '40px' }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--cyan)', letterSpacing: '0.3em' }}>HALL OF FAME</span>
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>TITLE CONTRACTS & CREDENTIALS</h2>
+            <section
+              aria-hidden={activeScene !== 2}
+              style={{
+                ...sceneTransitionStyle(activeScene === 2),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingLeft: '120px',
+                paddingRight: '60px',
+                gap: '40px',
+              }}
+            >
+              {visitedScenes.includes(2) && (
+                <>
+                  <div style={{ maxWidth: '620px', width: '100%', flex: 1 }}>
+                    <div style={{ marginBottom: '40px' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--cyan)', letterSpacing: '0.3em' }}>HALL OF FAME</span>
+                      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>TITLE CONTRACTS & CREDENTIALS</h2>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {certificates.map((cert, index) => (
+                        <CertificatePlaque key={cert.name} certificate={cert} index={index} />
+                      ))}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {certificates.map((cert, index) => (
-                      <CertificatePlaque key={cert.name} certificate={cert} index={index} />
-                    ))}
-                  </div>
-                </div>
 
-                {/* Right-side Championship Belt Photo */}
-                <SectionFighterPoster
-                  imageSrc="/images/belt.png"
-                  altText="Triple Crown Championship Belt"
-                  badgeText="TROPHY ROOM"
-                  title="GOLDEN BELTS"
-                  subtitle="6X CERTIFIED CHAMP"
-                  accentColor="var(--cyan)"
-                  stats={[
-                    { label: 'TITLES', val: '6 Belts' },
-                    { label: 'TIER', val: 'Diamond' },
-                    { label: 'REIGN', val: 'Active' },
-                  ]}
-                />
-              </motion.section>
-            )}
+                  {/* Right-side Championship Belt Photo */}
+                  <SectionFighterPoster
+                    imageSrc="/images/belt.png"
+                    altText="Triple Crown Championship Belt"
+                    badgeText="TROPHY ROOM"
+                    title="GOLDEN BELTS"
+                    subtitle="6X CERTIFIED CHAMP"
+                    accentColor="var(--cyan)"
+                    stats={[
+                      { label: 'TITLES', val: '6 Belts' },
+                      { label: 'TIER', val: 'Diamond' },
+                      { label: 'REIGN', val: 'Active' },
+                    ]}
+                  />
+                </>
+              )}
+            </section>
 
             {/* ═══════ SCENE 4 — BACKSTAGE ═══════ */}
-            {activeScene === 3 && (
-              <motion.section
-                key="backstage"
-                initial={{ opacity: 0, scale: 1.2 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.8 }}
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingLeft: '120px',
-                  paddingRight: '60px',
-                  gap: '40px',
-                }}
-              >
-                <div style={{ maxWidth: '620px', width: '100%', flex: 1 }}>
-                  <div style={{ marginBottom: '40px' }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--red-accent)', letterSpacing: '0.3em' }}>LOCKER ROOM</span>
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>BACKSTAGE</h2>
+            <section
+              aria-hidden={activeScene !== 3}
+              style={{
+                ...sceneTransitionStyle(activeScene === 3),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingLeft: '120px',
+                paddingRight: '60px',
+                gap: '40px',
+              }}
+            >
+              {visitedScenes.includes(3) && (
+                <>
+                  <div style={{ maxWidth: '620px', width: '100%', flex: 1 }}>
+                    <div style={{ marginBottom: '40px' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--red-accent)', letterSpacing: '0.3em' }}>LOCKER ROOM</span>
+                      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>BACKSTAGE</h2>
+                    </div>
+                    <div style={{ width: '100%' }}>
+                      <TimelineLocker />
+                    </div>
                   </div>
-                  <div style={{ width: '100%' }}>
-                    <TimelineLocker />
-                  </div>
-                </div>
 
-                {/* Right-side Locker Room War Room Photo */}
-                <SectionFighterPoster
-                  imageSrc="/images/locker_room.png"
-                  altText="Backstage Training Ground"
-                  badgeText="WAR ROOM"
-                  title="LOCKER ROOM"
-                  subtitle="TRAINING ARSENAL"
-                  accentColor="var(--red-accent)"
-                  stats={[
-                    { label: 'STACK', val: 'MERN/TS' },
-                    { label: 'EXPERIENCE', val: 'Production' },
-                    { label: 'FOCUS', val: 'Full Stack' },
-                  ]}
-                />
-              </motion.section>
-            )}
+                  {/* Right-side Locker Room War Room Photo */}
+                  <SectionFighterPoster
+                    imageSrc="/images/locker_room.png"
+                    altText="Backstage Training Ground"
+                    badgeText="WAR ROOM"
+                    title="LOCKER ROOM"
+                    subtitle="TRAINING ARSENAL"
+                    accentColor="var(--red-accent)"
+                    stats={[
+                      { label: 'STACK', val: 'MERN/TS' },
+                      { label: 'EXPERIENCE', val: 'Production' },
+                      { label: 'FOCUS', val: 'Full Stack' },
+                    ]}
+                  />
+                </>
+              )}
+            </section>
 
             {/* ═══════ SCENE 5 — CONTACT ═══════ */}
-            {activeScene === 4 && (
-              <motion.section
-                key="contact"
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -50 }}
-                transition={{ duration: 0.8 }}
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '60px',
-                  padding: '80px 3rem',
-                }}
-              >
-                <div style={{ textAlign: 'center', maxWidth: '480px' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--gold)', letterSpacing: '0.3em' }}>FINAL PROMO</span>
-                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 700, color: 'var(--gold)' }}>READY FOR THE NEXT MATCH?</h2>
-                  <p style={{ fontFamily: 'var(--font-body)', color: 'var(--text-secondary)', margin: '16px auto 32px', fontSize: '0.95rem' }}>
-                    The arena is open. The ring is set. Let&apos;s build something legendary together.
-                  </p>
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                    {[
-                      { label: '✉️ EMAIL', href: 'mailto:solankiut07@gmail.com', color: 'var(--gold)', external: false },
-                      { label: '💼 LINKEDIN', href: 'https://www.linkedin.com/in/utkarsh-solanki-424b55291/', color: 'var(--cyan)', external: true },
-                    ].map((link) => (
-                      <a
-                        key={link.label}
-                        href={link.href}
-                        target={link.external ? '_blank' : undefined}
-                        rel={link.external ? 'noopener noreferrer' : undefined}
-                        style={{
-                          padding: '12px 24px',
-                          border: `1px solid ${link.color}`,
-                          color: link.color,
-                          textDecoration: 'none',
-                          fontFamily: 'var(--font-display)',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          transition: 'all 0.2s ease',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        {link.label}
-                      </a>
-                    ))}
+            <section
+              aria-hidden={activeScene !== 4}
+              style={{
+                ...sceneTransitionStyle(activeScene === 4),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '60px',
+                padding: '80px 3rem',
+              }}
+            >
+              {visitedScenes.includes(4) && (
+                <>
+                  <div style={{ textAlign: 'center', maxWidth: '480px' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--gold)', letterSpacing: '0.3em' }}>FINAL PROMO</span>
+                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 700, color: 'var(--gold)' }}>READY FOR THE NEXT MATCH?</h2>
+                    <p style={{ fontFamily: 'var(--font-body)', color: 'var(--text-secondary)', margin: '16px auto 32px', fontSize: '0.95rem' }}>
+                      The arena is open. The ring is set. Let&apos;s build something legendary together.
+                    </p>
+                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                      {[
+                        { label: '✉️ EMAIL', href: 'mailto:solankiut07@gmail.com', color: 'var(--gold)', external: false },
+                        { label: '💼 LINKEDIN', href: 'https://www.linkedin.com/in/utkarsh-solanki-424b55291/', color: 'var(--cyan)', external: true },
+                      ].map((link) => (
+                        <a
+                          key={link.label}
+                          href={link.href}
+                          target={link.external ? '_blank' : undefined}
+                          rel={link.external ? 'noopener noreferrer' : undefined}
+                          style={{
+                            padding: '12px 24px',
+                            border: `1px solid ${link.color}`,
+                            color: link.color,
+                            textDecoration: 'none',
+                            fontFamily: 'var(--font-display)',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            transition: 'all 0.2s ease',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          {link.label}
+                        </a>
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                {/* Right-side Contact Contract Sign Poster */}
-                <SectionFighterPoster
-                  imageSrc="/images/avatar.png"
-                  altText="Main Event Contract Signing"
-                  badgeText="SIGN CONTRACT"
-                  title="MAIN EVENT DEAL"
-                  subtitle="UTKARSH SOLANKI"
-                  accentColor="var(--gold)"
-                  stats={[
-                    { label: 'STATUS', val: 'Available' },
-                    { label: 'OFFER', val: 'Open' },
-                    { label: 'MATCH', val: 'Book Now' },
-                  ]}
-                />
-              </motion.section>
-            )}
-          </AnimatePresence>
+                  {/* Right-side Contact Contract Sign Poster */}
+                  <SectionFighterPoster
+                    imageSrc="/images/avatar.png"
+                    altText="Main Event Contract Signing"
+                    badgeText="SIGN CONTRACT"
+                    title="MAIN EVENT DEAL"
+                    subtitle="UTKARSH SOLANKI"
+                    accentColor="var(--gold)"
+                    stats={[
+                      { label: 'STATUS', val: 'Available' },
+                      { label: 'OFFER', val: 'Open' },
+                      { label: 'MATCH', val: 'Book Now' },
+                    ]}
+                  />
+                </>
+              )}
+            </section>
 
           {/* Controller hints bar - fixed bottom */}
           <div

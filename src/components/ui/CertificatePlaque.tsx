@@ -43,14 +43,16 @@ const CertificatePlaque = ({ certificate, index }: CertificatePlaqueProps) => {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '16px',
-        padding: '14px 18px',
+        gap: '14px',
+        padding: '12px 16px',
         background: 'var(--bg-card)',
         border: `1px solid ${colors.border}`,
         borderRadius: '2px',
         position: 'relative',
         overflow: 'hidden',
         cursor: 'pointer',
+        minHeight: '74px',
+        boxSizing: 'border-box',
       }}
     >
       {/* Background shine sweep */}
@@ -69,19 +71,21 @@ const CertificatePlaque = ({ certificate, index }: CertificatePlaqueProps) => {
 
       {/* Plaque SVG Asset */}
       <div style={{ flexShrink: 0, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <CertificatePlaqueSVG style={{ width: '60px', height: '30px' }} glowColor={colors.border} />
+        <CertificatePlaqueSVG style={{ width: '56px', height: '28px' }} glowColor={colors.border} />
       </div>
 
       {/* Info */}
-      <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
+      <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
         <div
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: '0.95rem',
+            fontSize: 'clamp(0.85rem, 3.2vw, 0.95rem)',
             fontWeight: 600,
             textTransform: 'uppercase',
-            letterSpacing: '0.08em',
+            letterSpacing: '0.06em',
+            lineHeight: 1.25,
             color: 'var(--text-primary)',
+            wordBreak: 'break-word',
           }}
         >
           {certificate.name}
@@ -91,7 +95,8 @@ const CertificatePlaque = ({ certificate, index }: CertificatePlaqueProps) => {
             fontFamily: 'var(--font-mono)',
             fontSize: '0.65rem',
             color: 'var(--text-secondary)',
-            marginTop: '2px',
+            marginTop: '3px',
+            lineHeight: 1.2,
           }}
         >
           SANCTIONED BY: <span style={{ color: colors.text, fontWeight: 600 }}>{certificate.issuer}</span>
@@ -102,9 +107,10 @@ const CertificatePlaque = ({ certificate, index }: CertificatePlaqueProps) => {
             fontSize: '0.55rem',
             color: colors.text,
             textTransform: 'uppercase',
-            letterSpacing: '0.15em',
-            marginTop: '4px',
-            opacity: 0.8,
+            letterSpacing: '0.12em',
+            marginTop: '3px',
+            opacity: 0.85,
+            lineHeight: 1.2,
           }}
         >
           {tierLabels[certificate.tier]}

@@ -161,11 +161,9 @@ export function useArenaAudio(
       if (activeTrackRef.current !== 'theme') {
         playTrack('theme')
       }
-    } else {
+    } else if (activeTrackRef.current === 'theme' || !activeTrackRef.current) {
       // If we just finished the promo (or have no background track yet), start bgm1
-      if (activeTrackRef.current === 'theme' || !activeTrackRef.current) {
-        playTrack('bgm1')
-      }
+      playTrack('bgm1')
     }
   }, [isLoading, hasSeenPromo, playTrack])
 
@@ -215,9 +213,25 @@ export function useArenaAudio(
     return nextKey
   }, [playTrack])
 
+  // Global event listener for changing track anywhere in the app
+  useEffect(() => {
+    const handleNextEvent = () => {
+      nextTrack()
+    }
+    window.addEventListener('arena-next-track', handleNextEvent)
+    return () => window.removeEventListener('arena-next-track', handleNextEvent)
+  }, [nextTrack])
+
   return {
     playSound,
     stopSound,
     nextTrack,
   }
 }
+
+export function triggerNextTrack() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('arena-next-track'))
+  }
+}
+

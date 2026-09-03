@@ -7,6 +7,13 @@ const nextConfig: NextConfig = {
       'three',
       '@react-three/drei',
       '@react-three/fiber',
+      '@react-three/postprocessing',
+      'gsap',
+      'howler',
+      'lucide-react',
+      'sonner',
+      'zustand',
+      'radix-ui',
     ],
   },
 };

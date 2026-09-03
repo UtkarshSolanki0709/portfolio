@@ -10,14 +10,14 @@ import { Toaster } from "sonner";
 const barlowCondensed = Barlow_Condensed({
   variable: "--font-barlow",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "600", "700"],
   display: "swap",
 });
 
 const rajdhani = Rajdhani({
   variable: "--font-rajdhani",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "600", "700"],
   display: "swap",
 });
 
@@ -40,6 +40,7 @@ const pressStart = Press_Start_2P({
   subsets: ["latin"],
   weight: "400",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -240,7 +241,7 @@ export default function RootLayout({
             <Toaster theme="dark" position="bottom-right" richColors />
           </ToastProvider>
         </ThemeProvider>
-        <Analytics />
+        {process.env.VERCEL ? <Analytics /> : null}
       </body>
     </html>
   );
